@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 992 608" width="992" height="608" role="img" aria-label="SDSF output display, job ASMCLRUN J0123275">
+<rect width="100%" height="100%" fill="#000000"/>
+<g font-family="&#x27;IBM Plex Mono&#x27;,&#x27;Lucida Console&#x27;,&#x27;Courier New&#x27;,Courier,monospace" font-size="20" font-weight="700">
+<text x="52 64 76 88 100 112 124" y="34" fill="#e8e8e8">Display</text>
+<text x="148 160 172 184 196 208" y="34" fill="#e8e8e8">Filter</text>
+<text x="244 256 268 280" y="34" fill="#e8e8e8">View</text>
+<text x="316 328 340 352 364" y="34" fill="#e8e8e8">Print</text>
+<text x="400 412 424 436 448 460 472" y="34" fill="#e8e8e8">Options</text>
+<text x="508 520 532 544 556 568" y="34" fill="#e8e8e8">Search</text>
+<text x="604 616 628 640" y="34" fill="#e8e8e8">Help</text>
+<text x="28" y="58" fill="#4f7dff">-</text>
+<text x="52" y="58" fill="#4f7dff">-</text>
+<text x="76" y="58" fill="#4f7dff">-</text>
+<text x="100" y="58" fill="#4f7dff">-</text>
+<text x="124" y="58" fill="#4f7dff">-</text>
+<text x="148" y="58" fill="#4f7dff">-</text>
+<text x="172" y="58" fill="#4f7dff">-</text>
+<text x="196" y="58" fill="#4f7dff">-</text>
+<text x="220" y="58" fill="#4f7dff">-</text>
+<text x="244" y="58" fill="#4f7dff">-</text>
+<text x="268" y="58" fill="#4f7dff">-</text>
+<text x="292" y="58" fill="#4f7dff">-</text>
+<text x="316" y="58" fill="#4f7dff">-</text>
+<text x="340" y="58" fill="#4f7dff">-</text>
+<text x="364" y="58" fill="#4f7dff">-</text>
+<text x="388" y="58" fill="#4f7dff">-</text>
+<text x="412" y="58" fill="#4f7dff">-</text>
+<text x="436" y="58" fill="#4f7dff">-</text>
+<text x="460" y="58" fill="#4f7dff">-</text>
+<text x="484" y="58" fill="#4f7dff">-</text>
+<text x="508" y="58" fill="#4f7dff">-</text>
+<text x="532" y="58" fill="#4f7dff">-</text>
+<text x="556" y="58" fill="#4f7dff">-</text>
+<text x="580" y="58" fill="#4f7dff">-</text>
+<text x="604" y="58" fill="#4f7dff">-</text>
+<text x="628" y="58" fill="#4f7dff">-</text>
+<text x="652" y="58" fill="#4f7dff">-</text>
+<text x="676" y="58" fill="#4f7dff">-</text>
+<text x="700" y="58" fill="#4f7dff">-</text>
+<text x="724" y="58" fill="#4f7dff">-</text>
+<text x="748" y="58" fill="#4f7dff">-</text>
+<text x="772" y="58" fill="#4f7dff">-</text>
+<text x="796" y="58" fill="#4f7dff">-</text>
+<text x="820" y="58" fill="#4f7dff">-</text>
+<text x="844" y="58" fill="#4f7dff">-</text>
+<text x="868" y="58" fill="#4f7dff">-</text>
+<text x="892" y="58" fill="#4f7dff">-</text>
+<text x="916" y="58" fill="#4f7dff">-</text>
+<text x="940" y="58" fill="#4f7dff">-</text>
+<text x="28 40 52 64" y="82" fill="#dfe6ff">SDSF</text>
+<text x="88 100 112 124 136 148" y="82" fill="#dfe6ff">OUTPUT</text>
+<text x="172 184 196 208 220 232 244" y="82" fill="#dfe6ff">DISPLAY</text>
+<text x="268 280 292 304 316 328 340 352" y="82" fill="#dfe6ff">ASMCLRUN</text>
+<text x="376 388 400 412 424 436 448 460" y="82" fill="#dfe6ff">J0123275</text>
+<text x="496 508 520 532" y="82" fill="#dfe6ff">DSID</text>
+<text x="580 592 604" y="82" fill="#dfe6ff">103</text>
+<text x="628 640 652 664" y="82" fill="#dfe6ff">LINE</text>
+<text x="688" y="82" fill="#dfe6ff">0</text>
+<text x="784 796 808 820 832 844 856" y="82" fill="#dfe6ff">COLUMNS</text>
+<text x="880 892 904" y="82" fill="#dfe6ff">02-</text>
+<text x="928 940" y="82" fill="#dfe6ff">81</text>
+<text x="28 40 52 64 76 88 100" y="106" fill="#dfe6ff">COMMAND</text>
+<text x="124 136 148 160 172" y="106" fill="#dfe6ff">INPUT</text>
+<text x="196 208 220 232" y="106" fill="#dfe6ff">===&gt;</text>
+<text x="772 784 796 808 820 832" y="106" fill="#dfe6ff">SCROLL</text>
+<text x="856 868 880 892" y="106" fill="#dfe6ff">===&gt;</text>
+<text x="916 928 940" y="106" fill="#ff4d4d">CSR</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148 160 172 184 196 208 220 232 244 256 268 280 292 304 316 328 340 352 364 376 388 400 412" y="130" fill="#4f7dff">**********************************</text>
+<text x="436 448 460" y="130" fill="#9bbcff">TOP</text>
+<text x="484 496" y="130" fill="#9bbcff">OF</text>
+<text x="520 532 544 556" y="130" fill="#9bbcff">DATA</text>
+<text x="580 592 604 616 628 640 652 664 676 688 700 712 724 736 748 760 772 784 796 808 820 832 844 856 868 880 892 904 916 928 940 952 964" y="130" fill="#4f7dff">*********************************</text>
+<text x="16 28 40 52 64 76 88 100 112" y="154" fill="#9bbcff">ADDITION:</text>
+<text x="136 148 160 172 184 196 208 220" y="154" fill="#9bbcff">00000100</text>
+<text x="256" y="154" fill="#9bbcff">+</text>
+<text x="280 292 304 316 328 340 352 364" y="154" fill="#9bbcff">00000050</text>
+<text x="400" y="154" fill="#9bbcff">=</text>
+<text x="424 436 448 460 472 484 496 508" y="154" fill="#9bbcff">00000150</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148" y="178" fill="#9bbcff">SUBTRACTION:</text>
+<text x="172 184 196 208 220 232 244 256" y="178" fill="#9bbcff">00000100</text>
+<text x="280" y="178" fill="#9bbcff">-</text>
+<text x="304 316 328 340 352 364 376 388" y="178" fill="#9bbcff">00000050</text>
+<text x="412" y="178" fill="#9bbcff">=</text>
+<text x="436 448 460 472 484 496 508 520" y="178" fill="#9bbcff">00000050</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148 160 172 184" y="202" fill="#9bbcff">MULTIPLICATION:</text>
+<text x="208 220 232 244 256 268 280 292" y="202" fill="#9bbcff">00000015</text>
+<text x="316" y="202" fill="#9bbcff">*</text>
+<text x="340 352 364 376 388 400 412 424" y="202" fill="#9bbcff">00000005</text>
+<text x="448" y="202" fill="#9bbcff">=</text>
+<text x="472 484 496 508 520 532 544 556" y="202" fill="#9bbcff">00000075</text>
+<text x="16 28 40 52 64 76 88 100 112" y="226" fill="#9bbcff">DIVISION:</text>
+<text x="136 148 160 172 184 196 208 220" y="226" fill="#9bbcff">00000100</text>
+<text x="256" y="226" fill="#9bbcff">/</text>
+<text x="280 292 304 316 328 340 352 364" y="226" fill="#9bbcff">00000015</text>
+<text x="400" y="226" fill="#9bbcff">=</text>
+<text x="424 436 448 460 472 484 496 508" y="226" fill="#9bbcff">00000006</text>
+<text x="544 556 568 580" y="226" fill="#9bbcff">REM=</text>
+<text x="604 616 628 640 652 664 676 688" y="226" fill="#9bbcff">00000010</text>
+<text x="16 28 40 52" y="250" fill="#9bbcff">LOAD</text>
+<text x="76 88 100 112 124 136 148 160" y="250" fill="#9bbcff">ADDRESS:</text>
+<text x="184 196 208 220 232 244 256 268" y="250" fill="#9bbcff">00000025</text>
+<text x="304" y="250" fill="#9bbcff">+</text>
+<text x="328 340 352 364 376 388 400 412" y="250" fill="#9bbcff">00000075</text>
+<text x="448" y="250" fill="#9bbcff">=</text>
+<text x="472 484 496 508 520 532 544 556" y="250" fill="#9bbcff">00000100</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148 160 172 184 196 208 220 232 244 256 268 280 292 304 316 328 340 352 364 376 388 400" y="274" fill="#4f7dff">*********************************</text>
+<text x="424 436 448 460 472 484" y="274" fill="#9bbcff">BOTTOM</text>
+<text x="508 520" y="274" fill="#9bbcff">OF</text>
+<text x="544 556 568 580" y="274" fill="#9bbcff">DATA</text>
+<text x="604 616 628 640 652 664 676 688 700 712 724 736 748 760 772 784 796 808 820 832 844 856 868 880 892 904 916 928 940 952 964" y="274" fill="#4f7dff">*******************************</text>
+<rect x="52" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="148" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="244" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="316" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="400" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="508" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="604" y="37" width="12" height="2" fill="#e8e8e8"/>
+<rect x="256" y="108" width="12" height="3" fill="#ffffff"/>
+</g></svg>

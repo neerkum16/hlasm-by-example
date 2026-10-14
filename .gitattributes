@@ -1,0 +1,14 @@
+# Normalize line endings; Git decides text vs binary
+* text=auto
+
+# Assembler, JCL, and docs stay LF so columns and column-72 continuation characters are preserved
+*.asm text eol=lf
+*.mac text eol=lf
+*.jcl text eol=lf
+*.md  text eol=lf
+*.txt text eol=lf
+
+# Compiled and listing artifacts are binary if ever committed
+*.obj binary
+*.o   binary
+*.lst text eol=lf

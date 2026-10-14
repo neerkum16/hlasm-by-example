@@ -1,0 +1,22 @@
+# Assembler and linker output
+*.lst
+*.obj
+*.o
+*.lkd
+*.lmod
+*.load
+
+# Listings and job output downloaded from z/OS
+listings/
+spool/
+*.out
+*.log
+*.spool
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
