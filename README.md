@@ -1,4 +1,4 @@
-# hlasm-learning
+# hlasm-by-example
 
 Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic, branching, tables, searches, and SYSOUT I/O, with learning notes.
 
@@ -20,7 +20,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 |---|---|---|---|
 | 01 | Basics: linkage, SYSOUT I/O | HELLO | Done |
 | 02 | Registers and arithmetic | REGCALC | Done |
-| 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH | In progress (BR01CMP done) |
+| 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH | Done |
 | 04 | Subroutines | | Planned |
 | 05 | Packed decimal | | Planned |
 | 06 | Editing (ED/EDMK) | | Planned |
@@ -36,15 +36,15 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `HELLO.asm` | 01 | Writes one record to SYSOUT; standard entry and exit linkage | Done |
 | `REGCALC.asm` | 02 | Add, subtract, multiply, divide, and LA; converts binary results to printable digits | Done |
 | `BR01CMP.asm` | 03 | Compare instructions (CR, C, CLC, CLI, LTR) set the condition code; extended branch mnemonics (BE, BL, BNE, BNH, BZ, BM) test it | Done |
-| `BR02MASK.asm` | 03 | Branch on condition code using masks | To be documented |
-| `BR03LOOP.asm` | 03 | Looping | To be documented |
-| `BR04BXLE.asm` | 03 | Index loops with BXLE | To be documented |
-| `BR05TABL.asm` | 03 | Table processing | To be documented |
-| `BR06NEST.asm` | 03 | Nested loops and branches | To be documented |
-| `BR07CASE.asm` | 03 | Case selection | To be documented |
-| `BR08SRCH.asm` | 03 | Searching | To be documented |
+| `BR02MASK.asm` | 03 | Branch masks: extended mnemonics as `BC mask,target`; `BC 8`, `BC 12`, `BC 15`, `NOP`, `BZ` after arithmetic, `BCR 15,14` | Done |
+| `BR03LOOP.asm` | 03 | Loop shapes: counted loop with `BCT`, top-tested (DO WHILE), bottom-tested (DO UNTIL), `BCTR r,0` | Done |
+| `BR04BXLE.asm` | 03 | Index loops: `BXLE` over a fullword table by address, `BXH` counting down with a negative increment | Done |
+| `BR05TABL.asm` | 03 | Table of 12-byte entries stepped with an index register (`LA TABLE(5)`), `BCT` loop, running total | Done |
+| `BR06NEST.asm` | 03 | Nested loops: 4 by 4 multiplication table with `MR`, inner counter reset per row, `MVC` with explicit `D(L,B)` | Done |
+| `BR07CASE.asm` | 03 | Multi-way decisions: `CLI` IF / ELSE IF ladder and a branch table with a computed branch (`B BRTAB(3)`) and range check | Done |
+| `BR08SRCH.asm` | 03 | Serial search of a keyed table with `CLC`, early exit, found / not-found pattern, pointer register for SS instructions | Done |
 
-Add a row for each new program. Descriptions marked "To be documented" are inferred from the file names and will be replaced when each program is written up.
+Add a row for each new program.
 
 ## Conventions
 
