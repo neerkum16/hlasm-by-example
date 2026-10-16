@@ -14,6 +14,7 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | Topic | Program | Source | Doc | SYSOUT |
 |---|---|---|---|---|
 | 01 Basics | HELLO | `src/HELLO.asm` | `docs/HELLO.md` | `output/HELLO_SYSOUT.svg` |
+| 01 Basics | DT01TYPE | `src/DT01TYPE.asm` | `docs/DT01TYPE.md` | `output/DT01TYPE_SYSOUT.svg` |
 | 02 Registers and arithmetic | REGCALC | `src/REGCALC.asm` | `docs/REGCALC.md` | `output/REGCALC_SYSOUT.svg` |
 | 03 Branching and looping | BR01CMP | `src/BR01CMP.asm` | `docs/BR01CMP.md` | `output/BR01CMP_SYSOUT.svg` |
 | 03 Branching and looping | BR02MASK | `src/BR02MASK.asm` | `docs/BR02MASK.md` | `output/BR02MASK_SYSOUT.svg` |
@@ -23,6 +24,8 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 03 Branching and looping | BR06NEST | `src/BR06NEST.asm` | `docs/BR06NEST.md` | `output/BR06NEST_SYSOUT.svg` |
 | 03 Branching and looping | BR07CASE | `src/BR07CASE.asm` | `docs/BR07CASE.md` | `output/BR07CASE_SYSOUT.svg` |
 | 03 Branching and looping | BR08SRCH | `src/BR08SRCH.asm` | `docs/BR08SRCH.md` | `output/BR08SRCH_SYSOUT.svg` |
+| 05 Packed decimal | DT02ARTH | `src/DT02ARTH.asm` | `docs/DT02ARTH.md` | `output/DT02ARTH_SYSOUT.svg` |
+| 05 Packed decimal, 06 Editing | DT03CONV | `src/DT03CONV.asm` | `docs/DT03CONV.md` | `output/DT03CONV_SYSOUT.svg` |
 
 ## Register Conventions
 
@@ -41,6 +44,30 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 - QSAM output: `OPEN (dcb,(OUTPUT))`, `PUT dcb,area`, `CLOSE (dcb)`.
 - `DCB DSORG=PS,MACRF=PM,DDNAME=SYSOUT,RECFM=FB,LRECL=80,BLKSIZE=0`; the DD name must exist in the JCL.
 - `DC CL80'text'` pads to the record length with blanks.
+
+### DT01TYPE: data types and their hex content
+
+| Type | Example | Stored bytes | Notes |
+|---|---|---|---|
+| C | `CL10'ABC123'` | C1C2C3F1F2F3 40404040 | One byte per character; short values padded on the right with X'40' |
+| X | `XL4'0001ABCD'` | 0001ABCD | Two hex digits per byte; short values padded on the left with zeros |
+| B | `B'10110011'` | B3 | Written as bits, stored as whole bytes |
+| F | `F'-1234'` | FFFFFB2E | 4 bytes, twos complement, fullword aligned |
+| H | `H'-25'` | FFE7 | 2 bytes, halfword aligned |
+| P | `PL4'-1234'` | 0001234D | Two digits per byte; sign in the low nibble of the last byte (C positive, D negative, F unsigned) |
+| Z | `ZL6'-1234'` | F0F0F1F2F3D4 | One digit per byte; zone F except the last byte, whose zone carries the sign |
+| A | `A(DT01TYPE)` | 00008000 | 4 byte address, fullword aligned |
+| E | `E'1.5'` | 41180000 | Short floating point: sign and exponent byte, then fraction |
+
+Notes:
+
+- The type only decides how an instruction reads the bytes. `X'F1F2F3F4'` is `1234` as characters and -235736076 as a signed fullword.
+- Positive zoned decimal with sign C prints its last digit as a letter (`ZL6'1234'` prints `00123D`); only sign F prints as a digit.
+- `LTORG` places literals such as `=F'15'` in the pool.
+- `BAL 11,routine` calls an internal routine and `BR 11` returns. Parameters are passed in registers (R2 address, R3 length, R10 output address in `HEXDISP`).
+- Hex conversion of one byte: `IC` the byte, copy it, `SRL 6,4` for the high nibble, `N 5,=F'15'` for the low nibble, then `IC 7,HEXDIGIT(n)` and `STC` the character.
+- `UNPK` into an 8 byte field keeps only 8 digits; a 9 digit number loses its leftmost digit and the sign.
+- A `CL18` literal longer than 18 characters is cut to 18.
 
 ## 02 Registers and Arithmetic (REGCALC)
 
@@ -177,13 +204,78 @@ Notes:
 
 Planned.
 
-## 05 Packed Decimal
+## 05 Packed Decimal (DT02ARTH, DT03CONV)
 
-Planned.
+### DT02ARTH: packed decimal arithmetic
+
+Decimal instructions are SS format and work in storage. They need no general registers for the arithmetic. Operand lengths are coded as `field(length)`.
+
+| Instruction | Operation | Notes |
+|---|---|---|
+| `ZAP op1,op2` | Zero and add: op1 = op2 | Safe copy or move; clears op1 first, so lengths may differ and the sign is valid |
+| `AP op1,op2` | op1 = op1 + op2 | Signed; operand 1 must hold the result or a decimal overflow occurs |
+| `SP op1,op2` | op1 = op1 - op2 | `SP x,x` clears a field |
+| `CP op1,op2` | Compare, sets CC | 0 equal, 1 first low, 2 first high; `CP field,=P'0'` tests the sign |
+| `MP op1,op2` | op1 = op1 * op2 | Op2 at most 8 bytes; L1 greater than L2; high-order L2 bytes of op1 must be zero |
+| `DP op1,op2` | op1 = quotient and remainder | Quotient in the first L1-L2 bytes, remainder in the last L2 bytes, sign of the dividend |
+| `SRP op1,n,round` | Shift and round | Positive n shifts left; right shift of N is coded 64-N; rounding digit is added to the last digit shifted out (5 rounds half up, 0 truncates); ignored on a left shift |
+
+Notes:
+
+- Use `ZAP`, not `MVC`, to move packed data. `MVC` copies bytes only. `MVC WORKP(4),PACKA` into a zeroed `PL8` leaves the sign nibble in the middle: X'0012345C0000000C'.
+- `MVC` is safe for a whole field of equal length (`MVC SAMELEN(4),PACKA`).
+- `ZAP` into an 8-byte field before `MP` provides the leading zero bytes `MP` needs.
+- `DP DIVD(8),PACKB(4)`: quotient `DIVD(4)`, remainder `DIVD+4(4)`. A quotient too large for L1-L2 bytes causes a decimal divide exception.
+- `SRP` right 2 on 12345 gives 123 with rounding 5 and with 0, because the last digit shifted out is 4.
+- Signed display: `CP` against `=P'0'` and `MVI` for the sign character, then `UNPK ZONE15(15),WORKP(8)`, `OI ZONE15+14,X'F0'`, `MVC 1(15,10),ZONE15` (16 characters).
+- Test values: `PACKA` `PL4'12345'` X'0012345C', `PACKB` `PL4'678'` X'0000678C', `PACKC` `PL3'-250'` X'00250D'.
+- Results: 12345 + 678 = 13023; 12345 + (-250) = 12095; 678 - 12345 = -11667; 12345 * 678 = 8369910; 12345 / 678 = 18 remainder 141.
+- Internal routines `PKDISP` and `HEXDISP` are called with `BAL 11` and return with `BR 11`; neither can call the other because R11 would be overwritten.
+
+### DT03CONV: data conversions
+
+Conversion chain: character or zoned, `PACK`, packed, `CVB`, binary in a register, `CVD`, packed, `UNPK`, zoned, `OI` or `MVZ`, printable character. `ED` turns packed into a formatted character field.
+
+| Instruction | Conversion | Notes |
+|---|---|---|
+| `PACK op1,op2` | Zoned or character to packed | Digit nibble of each byte is kept; the zone of the last byte becomes the sign. No validity check |
+| `CVB r,dword` | Packed to binary | Source must be a doubleword, valid digits and sign; value must fit in 31 bits |
+| `CVD r,dword` | Binary to packed | Target must be a doubleword |
+| `UNPK op1,op2` | Packed to zoned | Zone F on every digit except the last byte, whose zone is the sign |
+| `OI field,X'F0'` | Force zone F | Makes the last digit printable; the sign is lost |
+| `MVZ op1,op2` | Move zone nibbles | Copies only the high nibble of each byte; can move zones between any bytes |
+| `ED op1,op2` | Packed to edited character | Pattern in operand 1 is overwritten by the digits |
+
+Notes:
+
+- `PACK` does not check its input. Leading blanks (X'40') pack as zero digits and are harmless. Trailing blanks pack as zero digits, scale the value by a power of ten and leave an invalid sign (4): `CL8'1234    '` gives X'0000000123400004'.
+- `PACK` does not understand a trailing minus. Pack only the digits (`PACK DOUBLE(8),CHARSGN(7)`), test the last character with `CLI`, then `NI DOUBLE+7,X'F0'` and `OI DOUBLE+7,X'0D'` set the sign to D.
+- `PACK` target length is explicit and the target is zero filled on the left. 8 digit characters fit an 8 byte target as X'000000000012345F'.
+- `CVB` and `CVD` need a doubleword-aligned target (`DS D`). `BINDISP` uses a second doubleword (`DBLDISP`) so the packed result in `DOUBLE` is not changed.
+- A negative zoned value prints a letter in the last position: `-1234` shows as `00123M` because X'D4' is the letter M. Positive with sign F prints as a digit.
+- Save the sign before `OI` or `MVZ` if it matters: `CP PACKWK(5),=P'0'`, then `MVI SIGNCHR,C'-'` or `C'+'`.
+- `BINDISP` prints 9 digits from a register: `CVD 3,DBLDISP`, `UNPK ZONE9(9),DBLDISP+3(5)` (the low 5 bytes hold 9 digits), `OI ZONE9+8,X'F0'`, `MVC 0(9,10),ZONE9`. The sign and any digits beyond 9 are lost.
+- `HEXDISP` changes R2, R3 and R10. Reload them for every call. It does not use R4.
+- Test values and results: `00012345` packs to X'000000000012345F'; `CVB` gives X'00003039' (12345); `A 4,=F'55'` gives 12400; `CVD` gives X'000000000012400C'.
 
 ## 06 Editing (ED/EDMK)
 
-Planned.
+### DT03CONV: ED basics
+
+| Pattern byte | Meaning |
+|---|---|
+| X'40' | Fill character (blank); first byte of the pattern |
+| X'20' | Digit selector: replaced by a digit, or the fill while leading zeros are suppressed |
+| X'21' | Significance starter: selects a digit and turns zero suppression off for the digits that follow |
+| X'4B' | Period, printed as is |
+| X'60' | Trailing minus: printed when the value is negative, replaced by the fill when positive |
+
+- Load the pattern into a work area first (`MVC EDWORK(9),EDMASK1`), then `ED EDWORK(9),PACKWK`. `ED` destroys the pattern, so reload it before every use.
+- `EDMASK1` X'402020202020202060': 7 digit selectors then a trailing minus. 12345 gives `   12345 `, -12345 gives `   12345-`.
+- `EDMASK2` X'4020202020214B202060': 123.45 style. 12345 gives `   123.45 `. The value 7 gives `      .07 `, not `0.07`. The digit selected by X'21' (the one before the period) is zero and is still replaced by the fill; zero suppression is off only for the digits after it.
+- To print a leading `0.07` the significance starter must be one digit position earlier in the pattern.
+- The packed source must be a valid packed field; `ED` reads the digits two per byte.
+- `EDMK` is not covered yet.
 
 ## 07 File I/O
 
@@ -205,7 +297,8 @@ Planned.
 
 | Date | Program | Symptom | Cause | Fix |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-15 | DT03CONV | Step 15 prints `.07`, comment says `0.07` | The digit selected by `X'21'` is the one before the period; it is zero and is still replaced by the fill | Comment is wrong, code unchanged; move the significance starter one digit earlier to print `0.07` |
+| 2026-10-15 | DT03CONV | Trailing blanks pack to X'0000000123400004' | `PACK` takes the low nibble of each blank (X'40') as digit 0 and the zone of the last blank (4) as the sign | Right justify the digits or pack only the digit part before `PACK` |
 
 ## Open Questions
 

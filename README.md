@@ -18,12 +18,12 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 
 | # | Topic | Programs | Status |
 |---|---|---|---|
-| 01 | Basics: linkage, SYSOUT I/O | HELLO | Done |
+| 01 | Basics: linkage, SYSOUT I/O, data types | HELLO, DT01TYPE | Done |
 | 02 | Registers and arithmetic | REGCALC | Done |
 | 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH | Done |
 | 04 | Subroutines | | Planned |
-| 05 | Packed decimal | | Planned |
-| 06 | Editing (ED/EDMK) | | Planned |
+| 05 | Packed decimal | DT02ARTH, DT03CONV | In progress |
+| 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress |
 | 07 | File I/O | | Planned |
 | 08 | DSECTs | | Planned |
 | 09 | Tables | | Planned |
@@ -34,6 +34,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | Program | Topic | Description | Status |
 |---|---|---|---|
 | `HELLO.asm` | 01 | Writes one record to SYSOUT; standard entry and exit linkage | Done |
+| `DT01TYPE.asm` | 01 | Defines one field of each DC type (C, X, B, F, H, P, Z, A, E); prints character and hex views with an internal `BAL` routine; overlays the same four bytes as characters and binary | Done |
 | `REGCALC.asm` | 02 | Add, subtract, multiply, divide, and LA; converts binary results to printable digits | Done |
 | `BR01CMP.asm` | 03 | Compare instructions (CR, C, CLC, CLI, LTR) set the condition code; extended branch mnemonics (BE, BL, BNE, BNH, BZ, BM) test it | Done |
 | `BR02MASK.asm` | 03 | Branch masks: extended mnemonics as `BC mask,target`; `BC 8`, `BC 12`, `BC 15`, `NOP`, `BZ` after arithmetic, `BCR 15,14` | Done |
@@ -43,6 +44,8 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `BR06NEST.asm` | 03 | Nested loops: 4 by 4 multiplication table with `MR`, inner counter reset per row, `MVC` with explicit `D(L,B)` | Done |
 | `BR07CASE.asm` | 03 | Multi-way decisions: `CLI` IF / ELSE IF ladder and a branch table with a computed branch (`B BRTAB(3)`) and range check | Done |
 | `BR08SRCH.asm` | 03 | Serial search of a keyed table with `CLC`, early exit, found / not-found pattern, pointer register for SS instructions | Done |
+| `DT02ARTH.asm` | 05 | Packed decimal arithmetic in 15 examples: `ZAP`, `AP`, `SP`, `CP`, `MP`, `DP`, `SRP`, and `MVC` on packed data (shows the broken and the safe case); signed display with `PKDISP`, hex dump with `HEXDISP` | Done |
+| `DT03CONV.asm` | 05, 06 | Data conversions in 15 steps: `PACK` (clean, zoned, leading and trailing blanks, trailing minus), `CVB`, `CVD`, `UNPK`, `OI` and `MVZ` for printable zones, `ED` with simple and decimal point masks; hex dump with `HEXDISP`, binary display with `BINDISP` | Done |
 
 Add a row for each new program.
 
