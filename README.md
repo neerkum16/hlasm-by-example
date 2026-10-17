@@ -9,6 +9,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `README.md` | Roadmap and index (this file) |
 | `LEARNING.md` | Consolidated notes: topic-to-program map, instruction notes, mistakes |
 | `docs/` | One write-up per program (`docs/<PROGRAM>.md`) |
+| `docs/concepts/` | Concept articles that explain one idea across several programs (`docs/concepts/<ARTICLE>.md`) |
 | `src/` | Assembler source, one file per program (`src/<PROGRAM>.asm`) |
 | `jcl/` | JCL to assemble, link, and run (`ASMCLRUN.jcl`) |
 | `output/` | SDSF SYSOUT screens for each program (`<PROGRAM>_SYSOUT.svg`) |
@@ -22,8 +23,8 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | 02 | Registers and arithmetic | REGCALC | Done |
 | 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH | Done |
 | 04 | Subroutines | | Planned |
-| 05 | Packed decimal | DT02ARTH, DT03CONV | In progress |
-| 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress |
+| 05 | Packed decimal | DT02ARTH, DT03CONV | Done |
+| 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress (EDMK pending) |
 | 07 | File I/O | QSAMPROC | In progress |
 | 08 | DSECTs | QSAMPROC (`DCBD` only) | In progress |
 | 09 | Tables | | Planned |
@@ -50,6 +51,25 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 
 Add a row for each new program.
 
+## Concept Articles
+
+Each article explains one idea that runs across several programs. It starts with a Scope line that states what the programs exercise. Files are in `docs/concepts/`.
+
+| Article | Topics | Programs | Central idea |
+|---|---|---|---|
+| `LINKAGE.md` | 01 | All programs, QSAMPROC, DT01TYPE, DT02ARTH | Save area chain, base register, 4096-byte reach, two base registers, `BAL` routines |
+| `DATA-TYPES.md` | 01 | DT01TYPE | The `DC` type builds the bytes; the instruction decides how they are read |
+| `REGISTER-PAIRS.md` | 02, 03 | REGCALC, BR04BXLE, BR06NEST | `MR`, `D`, `BXLE` and `LM` depend on even-odd pair layout |
+| `CONDITION-CODE.md` | 03 | BR01CMP, BR02MASK, QSAMPROC | Which instructions set the CC, mask bits 8/4/2/1, extended mnemonics |
+| `LOOP-CONTROL.md` | 03 | BR03LOOP, BR04BXLE, BR06NEST | `BCT`, `BXLE`, `BXH`, loop shapes, the zero-count trap, nesting |
+| `TABLES.md` | 03 | BR05TABL, BR08SRCH, QSAMPROC | Indexed addressing, pointer register for SS instructions, serial search |
+| `MULTIWAY-DECISIONS.md` | 03 | BR07CASE | `CLI` ladder versus branch table, range check before a computed branch |
+| `PACKED-ARITHMETIC.md` | 05 | DT02ARTH | Operand length rules for `ZAP`, `AP`, `MP`, `DP`, `SRP` |
+| `DATA-CONVERSIONS.md` | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | Conversion map and `ED` pattern rules |
+| `QSAM-CONTROL-BREAK.md` | 07 | QSAMPROC | `GET` and `PUT` in move mode, open and close order, priming read, group reset |
+
+Add a row when an article is written.
+
 ## Conventions
 
 Source follows fixed-format HLASM columns.
@@ -60,6 +80,7 @@ Source follows fixed-format HLASM columns.
 - Source files are uppercase with an `.asm` extension, for example `BR01CMP.asm`
 - File name, CSECT name, and the `END` operand match
 - Each program has a doc `docs/<PROGRAM>.md` with five sections: Program Overview, How the Program Works, Concepts Demonstrated, How the Concepts Are Implemented, Key Takeaways
+- Each concept article in `docs/concepts/` has a Scope line directly under the title, then Central Idea, the rules, and Common Failures
 
 ## Running a Program
 
@@ -69,4 +90,4 @@ Source follows fixed-format HLASM columns.
 
 ## Notes
 
-See `LEARNING.md` for the topic-to-program map, notes on instructions and linkage, and mistakes made along the way.
+See `LEARNING.md` for the topic-to-program map, the concept article index, notes on instructions and linkage, and mistakes made along the way.

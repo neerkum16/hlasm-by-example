@@ -1,12 +1,13 @@
 # Learning Notes
 
-Consolidated notes while learning HLASM on z/OS. Each program has its own write-up in `docs/<PROGRAM>.md`; this file maps topics to programs and keeps the short instruction notes.
+Consolidated notes while learning HLASM on z/OS. Each program has its own write-up in `docs/<PROGRAM>.md`; this file maps topics to programs and keeps the short instruction notes. Concept articles in `docs/concepts/` explain one idea across several programs.
 
 ## How to Use This File
 
 - One section per topic, in roadmap order.
 - Record what each instruction does, the registers it uses, and mistakes made.
 - Add a row to the topic map when a program is added.
+- Add a row to the concept article table when an article is written.
 - Add an entry to "Mistakes and Fixes" whenever something fails to assemble or runs wrong.
 
 ## Topic and Program Map
@@ -28,6 +29,25 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 05 Packed decimal, 06 Editing | DT03CONV | `src/DT03CONV.asm` | `docs/DT03CONV.md` | `output/DT03CONV_SYSOUT.svg` |
 | 07 File I/O, 08 DSECTs | QSAMPROC | `src/QSAMPROC.asm` | `docs/QSAMPROC.md` | `output/QSAMPROC_SYSOUT.svg` |
 
+## Concept Articles
+
+Each article starts with a Scope line that states what the programs exercise.
+
+| Article | Topics | Programs | File |
+|---|---|---|---|
+| Program linkage and addressability | 01 | All programs, QSAMPROC, DT01TYPE, DT02ARTH | `docs/concepts/LINKAGE.md` |
+| Data types and storage | 01 | DT01TYPE | `docs/concepts/DATA-TYPES.md` |
+| Even-odd register pairs | 02, 03 | REGCALC, BR04BXLE, BR06NEST | `docs/concepts/REGISTER-PAIRS.md` |
+| Condition code and branch masks | 03 | BR01CMP, BR02MASK, QSAMPROC | `docs/concepts/CONDITION-CODE.md` |
+| Loop control | 03 | BR03LOOP, BR04BXLE, BR06NEST | `docs/concepts/LOOP-CONTROL.md` |
+| Tables and indexed addressing | 03 | BR05TABL, BR08SRCH, QSAMPROC | `docs/concepts/TABLES.md` |
+| Multi-way decisions | 03 | BR07CASE | `docs/concepts/MULTIWAY-DECISIONS.md` |
+| Packed decimal arithmetic | 05 | DT02ARTH | `docs/concepts/PACKED-ARITHMETIC.md` |
+| Data conversions and editing | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | `docs/concepts/DATA-CONVERSIONS.md` |
+| QSAM processing and control break | 07 | QSAMPROC | `docs/concepts/QSAM-CONTROL-BREAK.md` |
+
+Planned articles: subroutines with `BAL` (after a topic 04 program) and DSECTs (after a program that maps a record layout).
+
 ## Register Conventions
 
 | Register | Use |
@@ -39,6 +59,8 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | R15 | Entry-point address on entry; return code on exit |
 
 ## 01 Basics (HELLO)
+
+Concept articles: `docs/concepts/LINKAGE.md`, `docs/concepts/DATA-TYPES.md`.
 
 - Entry linkage: `STM 14,12,12(13)`, `LR 12,15`, `USING name,12`, `ST 13,SAVEAREA+4`, `LA 13,SAVEAREA`.
 - Exit linkage: `L 13,SAVEAREA+4`, `LM 14,12,12(13)`, `SR 15,15`, `BR 14`.
@@ -72,6 +94,8 @@ Notes:
 
 ## 02 Registers and Arithmetic (REGCALC)
 
+Concept articles: `docs/concepts/REGISTER-PAIRS.md`, `docs/concepts/DATA-CONVERSIONS.md`.
+
 - `L` loads a fullword. `LA r,n` loads the value n (0 to 4095) with no storage reference.
 - `AR` adds and `SR` subtracts, register to register.
 - `MR even,reg`: the multiplicand is the odd register of the pair; the product fills the pair.
@@ -80,6 +104,8 @@ Notes:
 - Clear the output line with `MVC OUT(80),BLANKS` before building each message.
 
 ## 03 Branching and Looping
+
+Concept articles: `docs/concepts/CONDITION-CODE.md`, `docs/concepts/LOOP-CONTROL.md`, `docs/concepts/TABLES.md`, `docs/concepts/MULTIWAY-DECISIONS.md`, `docs/concepts/REGISTER-PAIRS.md`.
 
 ### BR01CMP: compare instructions and conditional branches
 
@@ -207,6 +233,8 @@ Planned.
 
 ## 05 Packed Decimal (DT02ARTH, DT03CONV)
 
+Concept articles: `docs/concepts/PACKED-ARITHMETIC.md`, `docs/concepts/DATA-CONVERSIONS.md`.
+
 ### DT02ARTH: packed decimal arithmetic
 
 Decimal instructions are SS format and work in storage. They need no general registers for the arithmetic. Operand lengths are coded as `field(length)`.
@@ -261,6 +289,8 @@ Notes:
 
 ## 06 Editing (ED/EDMK)
 
+Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
+
 ### DT03CONV: ED basics
 
 | Pattern byte | Meaning |
@@ -279,6 +309,8 @@ Notes:
 - `EDMK` is not covered yet.
 
 ## 07 File I/O (QSAMPROC)
+
+Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`.
 
 ### QSAMPROC: QSAM control break
 
@@ -328,7 +360,7 @@ Notes:
 
 ## 09 Tables
 
-Planned.
+Planned. The serial search and indexed stepping used so far are in `docs/concepts/TABLES.md`.
 
 ## 10 Macros
 
