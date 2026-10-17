@@ -24,8 +24,8 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | 04 | Subroutines | | Planned |
 | 05 | Packed decimal | DT02ARTH, DT03CONV | In progress |
 | 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress |
-| 07 | File I/O | | Planned |
-| 08 | DSECTs | | Planned |
+| 07 | File I/O | QSAMPROC | In progress |
+| 08 | DSECTs | QSAMPROC (`DCBD` only) | In progress |
 | 09 | Tables | | Planned |
 | 10 | Macros | | Planned |
 
@@ -46,6 +46,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `BR08SRCH.asm` | 03 | Serial search of a keyed table with `CLC`, early exit, found / not-found pattern, pointer register for SS instructions | Done |
 | `DT02ARTH.asm` | 05 | Packed decimal arithmetic in 15 examples: `ZAP`, `AP`, `SP`, `CP`, `MP`, `DP`, `SRP`, and `MVC` on packed data (shows the broken and the safe case); signed display with `PKDISP`, hex dump with `HEXDISP` | Done |
 | `DT03CONV.asm` | 05, 06 | Data conversions in 15 steps: `PACK` (clean, zoned, leading and trailing blanks, trailing minus), `CVB`, `CVD`, `UNPK`, `OI` and `MVZ` for printable zones, `ED` with simple and decimal point masks; hex dump with `HEXDISP`, binary display with `BINDISP` | Done |
+| `QSAMPROC.asm` | 07, 08 | QSAM control-break program: reads a sorted 559-byte file with `GET`, classifies each group with flag rules and a prefix table search, writes one comma-delimited record per group with `PUT`; EODAD and SYNAD exits, DCB open check through `DCBD`, two base registers, linkage register per calling level, packed counters | Done |
 
 Add a row for each new program.
 

@@ -26,6 +26,7 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 03 Branching and looping | BR08SRCH | `src/BR08SRCH.asm` | `docs/BR08SRCH.md` | `output/BR08SRCH_SYSOUT.svg` |
 | 05 Packed decimal | DT02ARTH | `src/DT02ARTH.asm` | `docs/DT02ARTH.md` | `output/DT02ARTH_SYSOUT.svg` |
 | 05 Packed decimal, 06 Editing | DT03CONV | `src/DT03CONV.asm` | `docs/DT03CONV.md` | `output/DT03CONV_SYSOUT.svg` |
+| 07 File I/O, 08 DSECTs | QSAMPROC | `src/QSAMPROC.asm` | `docs/QSAMPROC.md` | `output/QSAMPROC_SYSOUT.svg` |
 
 ## Register Conventions
 
@@ -277,13 +278,53 @@ Notes:
 - The packed source must be a valid packed field; `ED` reads the digits two per byte.
 - `EDMK` is not covered yet.
 
-## 07 File I/O
+## 07 File I/O (QSAMPROC)
 
-Planned.
+### QSAMPROC: QSAM control break
+
+QSAM calls and DCB operands:
+
+| Item | Use |
+|---|---|
+| `OPEN (dcb,(INPUT))` / `(dcb,(OUTPUT))` | Opens a file; sets no return code to test |
+| `GET dcb,area` | Move mode (`MACRF=GM`): copies the next record to `area` |
+| `PUT dcb,area` | Move mode (`MACRF=PM`): copies `area` to the buffer |
+| `CLOSE (dcb)` | Flushes the last output buffer; skipping it can lose records |
+| `EODAD=label` | Control goes to `label` instead of returning from `GET` at end of file |
+| `SYNAD=label` | Control goes to `label` on a genuine I/O error |
+| `LRECL=559,RECFM=FB,BLKSIZE=0` | Fixed 559-byte records, block size chosen by the system |
+
+Notes:
+
+- At EODAD, R2 to R13 are preserved by QSAM, so the base register and the return register of the caller of `READINP` are intact and `BR 9` works there.
+- Open order: SYSPRINT first, because every error path writes to it. Close order: SYSPRINT last, because the counts are printed after the data files close.
+- `PUT` to a file that is not open (or closed) branches through a DCB with no write routine: S0C1.
+- Control break on a sorted file: priming read, outer loop per group, inner loop that exits on end of file, customer change or connect id change. On exit the input area already holds the first record of the next group.
+- Reset group flags and the work areas once per group (`INITGRP`). Flags are only ever switched on inside the record loop.
+- A top-tested outer loop produces no output for an empty input.
+- Write the header line just before the first detail record, not at `OPEN`, so an empty input gives an empty output.
+- Output record built from named `DS` fields (`OUTNAME`, `OUTID`, ..., `OUTC1` to `OUTC17` for the separators), so a field is referred to by name rather than by offset.
+- `DC` of type C is limited to 256 bytes; use several `DC` statements or `DS`. `DC` of types Z and P is limited to 16 bytes.
+- Clearing 559 bytes: `MVC a(256),BLANK256`, `MVC a+256(256),BLANK256`, `MVC a+512(47),BLANK256`.
+- Prefix table search: `LA 2,PFXTAB`, `L 3,PFXCNT`, `CLC INACCTID(4),0(2)`, `BE found`, `LA 2,4(,2)`, `BCT 3,loop`.
+- `=CL3'FT'` compares 3 bytes with `FT` and a blank. `=C'FT'` compares 2 bytes and also matches `FTX`.
+- Message printing: `LA 1,msg`, `BAL 7,PRTMSG`. `PRTMSG` does `MVC PRTLINE(50),0(1)` and `PUT`. All messages are `CL50`.
+- Counters: `PL5`, `ZAP =P'0'`, `AP =P'1'`, `UNPK ZONE9(9),CNT(5)`, `OI ZONE9+8,X'F0'`.
+- Linkage registers by calling level: R10 level 1, R9 level 2, R8 level 3, R7 `PRTMSG`. A routine must not use the register that holds its own return address for a further call.
+
+### Two base registers
+
+- A displacement is 12 bits, so one base register reaches 4096 bytes. Storage past that (literal pool, DCBs, data) needs another base register.
+- `USING QSAMPROC,12,11`, `LA 11,4095(,12)`, `LA 11,1(,11)`. Two `LA` instructions are used because 4096 does not fit in a 12-bit displacement. The first register named in the `USING` covers the first 4096 bytes.
+- R11 is then not available for linkage, which is why `PRTMSG` uses R7.
 
 ## 08 DSECTs
 
-Planned.
+### QSAMPROC: DCB open check
+
+- `DCBD DSORG=PS` at the end of the program generates the `IHADCB` DSECT (a map, no storage).
+- `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `TM` tests only the bits that are ones in the mask; `BNO` branches when the tested bit is off.
+- Other DSECT topics are not covered yet.
 
 ## 09 Tables
 
@@ -299,7 +340,10 @@ Planned.
 |---|---|---|---|---|
 | 2026-10-15 | DT03CONV | Step 15 prints `.07`, comment says `0.07` | The digit selected by `X'21'` is the one before the period; it is zero and is still replaced by the fill | Comment is wrong, code unchanged; move the significance starter one digit earlier to print `0.07` |
 | 2026-10-15 | DT03CONV | Trailing blanks pack to X'0000000123400004' | `PACK` takes the low nibble of each blank (X'40') as digit 0 and the zone of the last blank (4) as the sign | Right justify the digits or pack only the digit part before `PACK` |
+| 2026-10-16 | QSAMPROC | ASMA068S on the blank constant | A `DC` of type C was coded as `CL349`; the limit for a `DC` of type C is 256 bytes | Use `DS` for the large area, or split the constant (`CL256` plus `CL93`) |
+| 2026-10-16 | QSAMPROC | ASMA034E operand beyond active `USING` range | Program longer than 4096 bytes with one base register | `USING QSAMPROC,12,11` with R11 = R12 + 4096 |
+| 2026-10-16 | QSAMPROC | S0C1 at run time | `PUT` to SYSPRINT before it was opened | `OPEN` SYSPRINT before the first `PUT`; close it last |
 
 ## Open Questions
 
--
+- QSAMPROC: the source lines after the EODAD banner comment (DCBs, `LTORG`, `DCBD`, `END`) were rebuilt, not taken from the screenshots. Compare with the real source.
