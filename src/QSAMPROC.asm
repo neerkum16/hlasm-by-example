@@ -897,21 +897,27 @@ BLANK256 DC    CL256' '                * 256 spaces
 *   MACRF=GM GET in move mode, the record is copied to our area       *
 *   MACRF=PM PUT in move mode, our record is copied to the buffer     *
 *   EODAD    where to branch when the input runs out of records       *
+*   SYNAD    where to branch when a real I/O error happens            *
+*   BLKSIZE=0 let the system choose the most efficient block size     *
 ***********************************************************************
-* NOTE - the lines from here to END were not in the supplied          *
-* screenshots.  They are rebuilt from the banner and the routine      *
-* names and must be checked against the real source.                  *
-***********************************************************************
-SYSPRINT DCB   DSORG=PS,MACRF=PM,DDNAME=SYSPRINT,                      X
-               RECFM=FB,LRECL=80,BLKSIZE=0
 AMHFIN   DCB   DSORG=PS,MACRF=GM,DDNAME=AMHFIN,                        X
                EODAD=READEOF,SYNAD=IOERRIN,                            X
                RECFM=FB,LRECL=559,BLKSIZE=0
+
 AMHFOUT  DCB   DSORG=PS,MACRF=PM,DDNAME=AMHFOUT,                       X
                SYNAD=IOERROUT,                                         X
                RECFM=FB,LRECL=559,BLKSIZE=0
 
-         LTORG
+SYSPRINT DCB   DSORG=PS,MACRF=PM,DDNAME=SYSPRINT,                      X
+               RECFM=FB,LRECL=80,BLKSIZE=0
 
-         DCBD  DSORG=PS                * Map of the DCB fields
+         LTORG                         * Literal pool for the =C and =P
+
+***********************************************************************
+* DCBD generates the IHADCB dummy section used by the OPEN tests.     *
+* It must come last because a DSECT ends the current control section, *
+* so no real storage may be defined after it.                         *
+***********************************************************************
+         DCBD  DSORG=PS,DEVD=DA        * Map of the DCB for TM DCBOFLGS
+
          END   QSAMPROC

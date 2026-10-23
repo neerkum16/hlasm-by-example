@@ -11,6 +11,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `docs/` | One write-up per program (`docs/<PROGRAM>.md`) |
 | `docs/concepts/` | Concept articles that explain one idea across several programs (`docs/concepts/<ARTICLE>.md`) |
 | `src/` | Assembler source, one file per program (`src/<PROGRAM>.asm`) |
+| `data/` | Test files for programs that read or write files (`<PROGRAM>_<DDNAME>.txt`) |
 | `jcl/` | JCL to assemble, link, and run (`ASMCLRUN.jcl`) |
 | `output/` | SDSF SYSOUT screens for each program (`<PROGRAM>_SYSOUT.svg`) |
 | `.gitattributes`, `.gitignore` | Line-ending rules and ignored files |
@@ -21,12 +22,12 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 |---|---|---|---|
 | 01 | Basics: linkage, SYSOUT I/O, data types | HELLO, DT01TYPE | Done |
 | 02 | Registers and arithmetic | REGCALC | Done |
-| 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH | Done |
+| 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH, BR09MTCH | Done |
 | 04 | Subroutines | | Planned |
 | 05 | Packed decimal | DT02ARTH, DT03CONV | Done |
 | 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress (EDMK pending) |
-| 07 | File I/O | QSAMPROC | In progress |
-| 08 | DSECTs | QSAMPROC (`DCBD` only) | In progress |
+| 07 | File I/O | QSAMPROC, BR09MTCH | In progress |
+| 08 | DSECTs | QSAMPROC, BR09MTCH (`DCBD` only) | In progress |
 | 09 | Tables | | Planned |
 | 10 | Macros | | Planned |
 
@@ -45,9 +46,10 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `BR06NEST.asm` | 03 | Nested loops: 4 by 4 multiplication table with `MR`, inner counter reset per row, `MVC` with explicit `D(L,B)` | Done |
 | `BR07CASE.asm` | 03 | Multi-way decisions: `CLI` IF / ELSE IF ladder and a branch table with a computed branch (`B BRTAB(3)`) and range check | Done |
 | `BR08SRCH.asm` | 03 | Serial search of a keyed table with `CLC`, early exit, found / not-found pattern, pointer register for SS instructions | Done |
+| `BR09MTCH.asm` | 03, 07, 08 | Match-merge of two sorted 10-byte key files: priming read, `CLC` three-way decision, `FLUSH1` / `FLUSH2` / `MATCHED` paths write file-1-only, file-2-only and common keys, drain after end of file, `EODAD` routines with `HIVALUE`, `BAL 10` read routines, `OPENCHK` with `TM DCBOFLGS,DCBOFOPN` through `DCBD`, `ABEND 999,DUMP`, five packed counters printed to `SYSPRINT`. Input file contents not supplied; run counts 5 / 5 read, 4 / 4 / 1 written | Done |
 | `DT02ARTH.asm` | 05 | Packed decimal arithmetic in 15 examples: `ZAP`, `AP`, `SP`, `CP`, `MP`, `DP`, `SRP`, and `MVC` on packed data (shows the broken and the safe case); signed display with `PKDISP`, hex dump with `HEXDISP` | Done |
 | `DT03CONV.asm` | 05, 06 | Data conversions in 15 steps: `PACK` (clean, zoned, leading and trailing blanks, trailing minus), `CVB`, `CVD`, `UNPK`, `OI` and `MVZ` for printable zones, `ED` with simple and decimal point masks; hex dump with `HEXDISP`, binary display with `BINDISP` | Done |
-| `QSAMPROC.asm` | 07, 08 | QSAM control-break program: reads a sorted 559-byte file with `GET`, classifies each group with flag rules and a prefix table search, writes one comma-delimited record per group with `PUT`; EODAD and SYNAD exits, DCB open check through `DCBD`, two base registers, linkage register per calling level, packed counters | Done |
+| `QSAMPROC.asm` | 07, 08 | QSAM control-break program: reads a sorted 559-byte file with `GET`, classifies each group with flag rules and a prefix table search, writes one comma-delimited record per group with `PUT`; EODAD and SYNAD exits, DCB open check through `DCBD`, two base registers, linkage register per calling level, packed counters. Test files: `data/QSAMPROC_AMHFIN.txt` (6 records, 3 groups) and `data/QSAMPROC_AMHFOUT.txt` (header and 3 detail records) | Done |
 
 Add a row for each new program.
 
@@ -81,12 +83,14 @@ Source follows fixed-format HLASM columns.
 - File name, CSECT name, and the `END` operand match
 - Each program has a doc `docs/<PROGRAM>.md` with five sections: Program Overview, How the Program Works, Concepts Demonstrated, How the Concepts Are Implemented, Key Takeaways
 - Each concept article in `docs/concepts/` has a Scope line directly under the title, then Central Idea, the rules, and Common Failures
+- Test files in `data/` are named `<PROGRAM>_<DDNAME>.txt`, are plain text with one fixed-length record per line (trailing blanks kept), and are uploaded to the mainframe as text
 
 ## Running a Program
 
 1. Copy the source to a partitioned dataset (member name = program name).
-2. Adjust and submit `jcl/ASMCLRUN.jcl` (assemble, link, go).
-3. The program writes to the `SYSOUT` DD. View it in SDSF and compare with `output/<PROGRAM>_SYSOUT.svg`.
+2. For a program that reads or writes files, upload the files from `data/` as text to datasets with the record format and length the program expects (QSAMPROC: `RECFM=FB`, `LRECL=559`; BR09MTCH: `INFILE1` and `INFILE2` sorted, `RECFM=FB`, `LRECL=10`, plus output datasets for `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM`) and point the DD names at them in the JCL. Keep trailing blanks.
+3. Adjust and submit `jcl/ASMCLRUN.jcl` (assemble, link, go).
+4. The program writes to the `SYSOUT` DD (QSAMPROC and BR09MTCH: `SYSPRINT`). View it in SDSF and compare with `output/<PROGRAM>_SYSOUT.svg`. Compare any output file with its file in `data/`.
 
 ## Notes
 

@@ -4,7 +4,7 @@
 //***************************************************************
 //*  SET PROGRAM NAME, SOURCE & LOAD LIBRARY
 //***************************************************************
-//  SET PGMNAME=BR01CMP                  <--- Program Name
+//  SET PGMNAME=HELLO               <--- Program Name
 //  SET SOURCE=HLQ.MLQ.SOURCE       <--- Program Source PDS
 //  SET LOAD=HLQ.MLQ.LOADLIB        <--- Load Module PDS
 //***************************************************************

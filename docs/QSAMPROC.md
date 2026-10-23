@@ -36,12 +36,29 @@ Registers used:
 | R12 | First base register |
 | R13 | Save area |
 
-Output on SYSPRINT (4 lines, job J0077886: 34 records read, 13 groups written):
+Test data (in `data/`, fixed length 559, ASCII text, upload as text to an `LRECL=559` `RECFM=FB` dataset):
+
+| File | Content |
+|---|---|
+| `data/QSAMPROC_AMHFIN.txt` | Input, 6 records in 3 groups |
+| `data/QSAMPROC_AMHFOUT.txt` | Output from the run: header record and 3 detail records |
+
+Input groups:
+
+| Group | Customer | Connect id | Records (service code, access) |
+|---|---|---|---|
+| 1 | 85008 | D0A0V901 | ADM F, BR F |
+| 2 | 85008 | D0A0W301 | ADM F |
+| 3 | 85100 | W0A07001 | ADM F, CIT F, BR F |
+
+Run JCL: `jcl/QSAMPROC.jcl` (assemble with `ASMA90`, link-edit with `HEWL`, run). The run step has `AMHFIN` (`APXT.TAQ8656.AMH.INPUT`, `DISP=SHR`), `AMHFOUT` (`APXT.TAQ8656.AMH.OUTPUT`, new, `RECFM=FB`, `LRECL=559`) and `SYSPRINT`. `AMHFOUT` is `NEW,CATLG,DELETE`, so delete the dataset before a rerun or the step fails on allocation.
+
+Output on SYSPRINT (4 lines, job J0127557: 6 records read, 3 groups written):
 
 ```
 QSAMPROC - PROGRAM STARTED
-QSAMPROC - RECORDS R000000034
-QSAMPROC - RECORDS W000000013
+QSAMPROC - RECORDS R000000006
+QSAMPROC - RECORDS W000000003
 QSAMPROC - PROGRAM ENDED NORMALLY
 ```
 
@@ -69,19 +86,31 @@ QSAMPROC - PROGRAM ENDED NORMALLY
 
 **Counts.** `PRTCNTS` copies a message to `MSGREAD`, `UNPK ZONE9(9),READCNT(5)`, `OI ZONE9+8,X'F0'`, moves the digits to `MSGREAD+20(9)`, and prints. The same steps run for `WRITCNT`.
 
-**Execution trace (sample run).**
+**Execution trace (test data).**
 
 | Step | Routine | Effect |
 |---|---|---|
 | 1 | `INITIAL` | Areas cleared, switches set, counters zero |
 | 2 | `OPENFILE` | SYSPRINT, AMHFIN, AMHFOUT opened and checked |
 | 3 | `PRTMSG` | PROGRAM STARTED |
-| 4 | `READINP` | First record read, `READCNT` = 1 |
-| 5 | `GRPLOOP` x 13 | Each pass reads one group, sets flags, writes one record; the first pass also writes the header |
-| 6 | `READEOF` | 34th `GET` finds no more records, `EOFSW` = `Y` |
-| 7 | `GRPLOOP` | `EOFSW` is `Y`, loop ends |
-| 8 | `CLOSFILE`, `PRTCNTS` | Data files closed; counts 34 and 13 printed; end marker printed |
-| 9 | `CLOSE SYSPRINT`, exit | Return code 0 |
+| 4 | `READINP` | Record 1 read (D0A0V901, ADM F), `READCNT` = 1 |
+| 5 | `GRPLOOP`, group 1 | `SAVEKEY` saves 85008 / D0A0V901. `CHKREC` on record 1: R1 matches, `HASADM` = `Y`. Record 2 (BR) matches no rule. Record 3 has a different connect id, so the group ends. `FINALCLS` gives SYSTEM ADMINISTRATOR. Header and detail 1 written |
+| 6 | `GRPLOOP`, group 2 | Record 3 (D0A0W301, ADM F): `HASADM` = `Y`. Record 4 has a different customer, so the group ends. Detail 2 written |
+| 7 | `GRPLOOP`, group 3 | Records 4, 5, 6 (W0A07001): ADM F sets `HASADM`, CIT sets `HASPAY`, BR matches nothing. After record 6, the `GET` in `READINP` finds no record and goes to `READEOF`: `EOFSW` = `Y`, `READCNT` stays 6. The group ends on the end of file test. `HASADM` wins. Detail 3 written |
+| 8 | `GRPLOOP` | `EOFSW` is `Y`, loop ends |
+| 9 | `CLOSFILE`, `PRTCNTS` | Data files closed; counts 6 and 3 printed; end marker printed |
+| 10 | `CLOSE SYSPRINT`, exit | Return code 0 |
+
+Output file (`data/QSAMPROC_AMHFOUT.txt`, 4 records of 559 bytes):
+
+| Rec | Content |
+|---|---|
+| 1 | Header line: `NAME,ID,TYPE,SUBTYPE,STATUS,DESCRIPTION,ACCOUNTCORRELATIONVALUE,ISPRIVILEGEDFLAG,ISLOCKED,USERFIRSTNAME,USERLASTNAME,PRIMARYOWNER,CREATIONDATE,LASTLOGINDATE,PASSWORDLASTCHANGEDATE,DISABLEDDATE,COSTCENTRE,ACCESS`, then blanks |
+| 2 | `D0A0V901,D0A0V901,PERSONAL PRIMARY ID,PRIMARY,ACTIVE,PERSONAL PRIMARY LOGIN ACCOUNT TO WBU,` correlation value (blank), `,FALSE,FALSE,` eight blank columns, `SYSTEM ADMINISTRATOR` |
+| 3 | Same layout with `D0A0W301` |
+| 4 | Same layout with `W0A07001` |
+
+Field positions in a detail record: name 1, id 10, type 19, subtype 39, status 47, description 54, correlation value 92, `FALSE` at 101 and 107, access 129, trailing filler 149 to 559.
 
 ## Concepts Demonstrated
 
@@ -103,7 +132,7 @@ QSAMPROC - PROGRAM ENDED NORMALLY
 |---|---|
 | EODAD | `DCB ...,EODAD=READEOF`. When `GET` finds no more records, control goes to `READEOF` instead of returning. R9 and R12 are intact, so `BR 9` there returns to the caller of `READINP`. |
 | SYNAD | `SYNAD=IOERRIN` and `SYNAD=IOERROUT` route a real I/O error to a message and `ABENDRTN`. |
-| Open check | `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `DCBD DSORG=PS` at the end generates the `IHADCB` map. |
+| Open check | `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `DCBD DSORG=PS,DEVD=DA` at the end generates the `IHADCB` map. |
 | Open order | SYSPRINT is opened first because every error path writes to it. If SYSPRINT itself fails, the program abends without a message. |
 | Control break | `SAVEKEY` copies the key of the first record; `PROCGRP` compares each record with it using `CLC`. |
 | Group reset | `INITGRP` sets `HASADM`, `HASPAY`, `HASFTS` to `N` and clears `FINALCLA` and `OUTAREA` before every group. |
@@ -126,8 +155,10 @@ QSAMPROC - PROGRAM ENDED NORMALLY
 - `OPEN` sets no return code to test. Test `DCBOFOPN` in `DCBOFLGS` through the `IHADCB` DSECT.
 - Without `INITGRP`, a flag set by one group stays on for the next and groups are misclassified.
 - A top-tested group loop produces no output for an empty input file.
-- The count is placed at `MSGREAD+20(9)`, one byte after the start of `READ    :`. The `R` of `READ` remains, so the printed text is `RECORDS R000000034`. Placing the number at offset 21 or moving the label text would give a cleaner line. The code was left as it ran.
+- The test data covers only rule R1 and the priority rule R4 for `SYSTEM ADMINISTRATOR`. Rules R2 and R3 are exercised only as flags that do not change the result, and `REGULAR USER` and `READ ONLY USER` do not occur. The correlation value column is blank because the test input has no ACF2 id.
+- The count is placed at `MSGREAD+20(9)`, one byte after the start of `READ    :`. The `R` of `READ` remains, so the printed text is `RECORDS R000000006`. Placing the number at offset 21 or moving the label text would give a cleaner line. The code was left as it ran.
 - The comment in `PRTCNTS` says `PROGRAM QSAMPROC ENDED` while `MSGEND` prints `PROGRAM ENDED NORMALLY`.
 - The `WRITEOUT` banner is numbered 7000 and the `CLOSFILE` banner 8000; the notes call the second routine `CLOSEFILE`. The label in the code is `CLOSFILE`.
 - Errors met while building the program: ASMA068S (a `CL349` pad longer than the 256-byte limit of `DC`), ASMA034E (operand beyond the active `USING` range), S0C1 (PUT to an unopened SYSPRINT).
-- The source lines after the `EODAD` banner comment (DCB macros, `LTORG`, `DCBD`, `END`) were not in the supplied screenshots and are rebuilt from the banner and routine names.
+- `DCBD` must be the last statement before `END`: a DSECT ends the current control section, so no real storage can be defined after it. `LTORG` comes before it so the literal pool stays in the CSECT.
+- The DCBs are at the end of the program, past byte 4095, which is why the second base register is needed for `OPEN`, `GET` and `PUT` to address them.

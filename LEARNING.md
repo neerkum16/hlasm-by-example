@@ -7,6 +7,7 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 - One section per topic, in roadmap order.
 - Record what each instruction does, the registers it uses, and mistakes made.
 - Add a row to the topic map when a program is added.
+- Add a row to the test data table when a program has files in `data/`.
 - Add a row to the concept article table when an article is written.
 - Add an entry to "Mistakes and Fixes" whenever something fails to assemble or runs wrong.
 
@@ -25,9 +26,21 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 03 Branching and looping | BR06NEST | `src/BR06NEST.asm` | `docs/BR06NEST.md` | `output/BR06NEST_SYSOUT.svg` |
 | 03 Branching and looping | BR07CASE | `src/BR07CASE.asm` | `docs/BR07CASE.md` | `output/BR07CASE_SYSOUT.svg` |
 | 03 Branching and looping | BR08SRCH | `src/BR08SRCH.asm` | `docs/BR08SRCH.md` | `output/BR08SRCH_SYSOUT.svg` |
+| 03 Branching and looping, 07 File I/O, 08 DSECTs | BR09MTCH | `src/BR09MTCH.asm` | `docs/BR09MTCH.md` | `output/BR09MTCH_SYSOUT.svg` |
 | 05 Packed decimal | DT02ARTH | `src/DT02ARTH.asm` | `docs/DT02ARTH.md` | `output/DT02ARTH_SYSOUT.svg` |
 | 05 Packed decimal, 06 Editing | DT03CONV | `src/DT03CONV.asm` | `docs/DT03CONV.md` | `output/DT03CONV_SYSOUT.svg` |
 | 07 File I/O, 08 DSECTs | QSAMPROC | `src/QSAMPROC.asm` | `docs/QSAMPROC.md` | `output/QSAMPROC_SYSOUT.svg` |
+
+## Test Data
+
+Programs that read or write files keep their test files in `data/`, named `<PROGRAM>_<DDNAME>.txt`. Each line is one fixed-length record with trailing blanks kept; upload as text.
+
+| Program | DD | File | Records | Content |
+|---|---|---|---|---|
+| QSAMPROC | AMHFIN | `data/QSAMPROC_AMHFIN.txt` | 6 x 559 | 3 groups: 85008 / D0A0V901 (ADM F, BR F), 85008 / D0A0W301 (ADM F), 85100 / W0A07001 (ADM F, CIT F, BR F) |
+| QSAMPROC | AMHFOUT | `data/QSAMPROC_AMHFOUT.txt` | 4 x 559 | Output of the run: header line and 3 detail records, all `SYSTEM ADMINISTRATOR` |
+
+BR09MTCH has no files in `data/` yet: its input and output files were not supplied (see Open Questions).
 
 ## Concept Articles
 
@@ -221,6 +234,18 @@ Notes:
 - Copy the search argument to a work key (`MVC SRCHKEY(8),0(10)`) so the compare has a fixed first operand.
 - Output columns: key at `OUTMSG(8)`, message at `OUTMSG+10(40)`, value at `OUTMSG+50(8)`.
 
+### BR09MTCH: match-merge of two sorted files
+
+Also listed under 07 File I/O and 08 DSECTs. The file handling is in the 07 section below.
+
+- Decision on two current keys: `CLC KEY1,KEY2`, then `BE MATCHED`, `BL FLUSH1`, `B FLUSH2`. Equal writes the key once to `OUTCOMM` and reads both files; low writes file 1's key to `OUT1ONLY` and reads file 1; high does the same for file 2.
+- Check the EOF switches before the `CLC` (`CLI EOF1,C'Y'`, `CLI EOF2,C'Y'`). When one file has ended, the other is drained through `FLUSH1` or `FLUSH2`. `CHECK2` ends the loop only when both switches are `Y`.
+- Read only the file whose record was dealt with. After `FLUSH1` the record in `KEY2` is still unprocessed.
+- `HIVALUE DC 10X'FF'` in the key at end of file compares higher than any printable key. Here it is only a safety net, because the EOF switches are tested first.
+- Every path loops back with `B MAINLOOP`; the program ends only at `ALLDONE`.
+- Both files must be sorted ascending on the key. Repeated keys inside one file are not paired: the first occurrence matches, the repeat ends in an "only" file.
+- Run result: 5 records read from each file, 4 file-1-only, 4 file-2-only, 1 common (4 + 1 = 5 per file).
+
 ### Patterns used in every program
 
 - Output line: `MVC OUTMSG(80),BLANKS`, `MVC OUTMSG(50),msg`, then `CVD`, `UNPK ZONE,DOUBLE`, `OI ZONE+7,X'F0'`, `MVC OUTMSG+50(8),ZONE`, `PUT`.
@@ -308,7 +333,7 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 - The packed source must be a valid packed field; `ED` reads the digits two per byte.
 - `EDMK` is not covered yet.
 
-## 07 File I/O (QSAMPROC)
+## 07 File I/O (QSAMPROC, BR09MTCH)
 
 Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`.
 
@@ -343,20 +368,36 @@ Notes:
 - Message printing: `LA 1,msg`, `BAL 7,PRTMSG`. `PRTMSG` does `MVC PRTLINE(50),0(1)` and `PUT`. All messages are `CL50`.
 - Counters: `PL5`, `ZAP =P'0'`, `AP =P'1'`, `UNPK ZONE9(9),CNT(5)`, `OI ZONE9+8,X'F0'`.
 - Linkage registers by calling level: R10 level 1, R9 level 2, R8 level 3, R7 `PRTMSG`. A routine must not use the register that holds its own return address for a further call.
+- The three DCBs (AMHFIN, AMHFOUT, SYSPRINT) are at the end of the program, followed by `LTORG` and then `DCBD`. A DCB continuation line carries `X` in column 72.
+- Test run with `data/QSAMPROC_AMHFIN.txt`: 6 records read, 3 written. SYSPRINT shows `RECORDS R000000006` and `RECORDS W000000003`. The `R` and `W` come from the count being placed one byte inside the label text.
+- The test file only covers rule R1, so every group is `SYSTEM ADMINISTRATOR`. Records for R2, R3, `REGULAR USER` and `READ ONLY USER` are still to be added.
 
-### Two base registers
+### BR09MTCH: two inputs, three outputs
 
-- A displacement is 12 bits, so one base register reaches 4096 bytes. Storage past that (literal pool, DCBs, data) needs another base register.
-- `USING QSAMPROC,12,11`, `LA 11,4095(,12)`, `LA 11,1(,11)`. Two `LA` instructions are used because 4096 does not fit in a 12-bit displacement. The first register named in the `USING` covers the first 4096 bytes.
-- R11 is then not available for linkage, which is why `PRTMSG` uses R7.
+- Five data DCBs plus `SYSPRINT`: `INFILE1` and `INFILE2` (`MACRF=GM`, `EODAD=EOF1RTN` / `EOF2RTN`, `LRECL=10`), `OUT1ONLY`, `OUT2ONLY`, `OUTCOMM` (`MACRF=PM`, `LRECL=10`). Each DCB continuation line carries `X` in column 72.
+- Open order: `SYSPRINT` first and checked, then the five data files, each with `LA 2,dcb`, `BAL 10,OPENCHK`, `BNO OPNERRn`. Each `OPNERRn` loads its own `CL50` message and joins `OPNERRX`, which prints it and branches to `ABENDRTN`.
+- Close: `CLOSE (INFILE1,,INFILE2,,OUT1ONLY,,OUT2ONLY,,OUTCOMM)` in one macro, then the counts and the end message, then `CLOSE (SYSPRINT)` last.
+- `READ1` / `READ2`: `MVC KEY,BLANKS10`, `GET dcb,KEY`, `AP CNT,=P'1'`, `BR 10`. The EODAD routine sets the EOF switch to `Y`, moves `HIVALUE` into the key and does `BR 10`. This works because QSAM preserves R2 to R13 (R10 and R12 intact).
+- `GET` in move mode reads straight into the 10-byte key field, because the record is only the key.
+- `ABEND 999,DUMP` ends the step with user completion code 999 and requests a dump. It is reached only from open failures.
+- Counters `PL4` with `ZONE CL7`: `UNPK ZONE,CNT`, `OI ZONE+6,X'F0'`, `MVC PRTLINE+21(7),ZONE`. Labels are `CL20`, so the number is always at column 22. A count over 9999999 loses its leftmost digit.
+- Data layout: all data, constants, DCBs and `LTORG` come after the last `BR`, then `DCBD`, then `END`.
 
 ## 08 DSECTs
 
 ### QSAMPROC: DCB open check
 
-- `DCBD DSORG=PS` at the end of the program generates the `IHADCB` DSECT (a map, no storage).
+- `DCBD DSORG=PS,DEVD=DA` at the end of the program generates the `IHADCB` DSECT (a map, no storage).
+- `DCBD` must be the last statement before `END`: a DSECT ends the current control section, so no real storage can be defined after it. `LTORG` goes before it.
 - `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `TM` tests only the bits that are ones in the mask; `BNO` branches when the tested bit is off.
 - Other DSECT topics are not covered yet.
+
+### BR09MTCH: DCB open check as a routine
+
+- The same check is now an internal routine `OPENCHK` that takes the DCB address in R2 and returns with `BR 10`. The condition code from `TM` is the result, so the caller does `BAL 10,OPENCHK` and then `BNO OPNERRn` for the file it just opened.
+- Between `BAL` and `BNO` nothing may change the condition code; `DROP` and `BR` do not.
+- One routine serves all six DCBs because `USING IHADCB,2` maps the dummy section over whichever DCB R2 points at.
+- `DCBD DSORG=PS,DEVD=DA` follows `LTORG` and is the last statement before `END`.
 
 ## 09 Tables
 
@@ -378,4 +419,5 @@ Planned.
 
 ## Open Questions
 
-- QSAMPROC: the source lines after the EODAD banner comment (DCBs, `LTORG`, `DCBD`, `END`) were rebuilt, not taken from the screenshots. Compare with the real source.
+- QSAMPROC: test records for rules R2 and R3, `REGULAR USER` and `READ ONLY USER`, a group whose records carry an ACF2 id, and an empty input file.
+- BR09MTCH: the contents of `INFILE1`, `INFILE2`, `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM` for the run with 5 / 5 records read, to be added to `data/`. Cases still to test: an empty file 1, an empty file 2, both empty, a repeated key in one file, and an open failure (missing DD).
