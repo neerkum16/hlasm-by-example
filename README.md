@@ -12,8 +12,8 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `docs/concepts/` | Concept articles that explain one idea across several programs (`docs/concepts/<ARTICLE>.md`) |
 | `src/` | Assembler source, one file per program (`src/<PROGRAM>.asm`) |
 | `data/` | Test files for programs that read or write files (`<PROGRAM>_<DDNAME>.txt`) |
-| `jcl/` | JCL to assemble, link, and run (`ASMCLRUN.jcl`) |
-| `output/` | SDSF SYSOUT screens for each program (`<PROGRAM>_SYSOUT.svg`) |
+| `jcl/` | JCL to assemble, link, and run (`ASMCLRUN.jcl`; `BR09MTCH.jcl` for BR09MTCH with its five data files; `QSAMPROC.jcl` for QSAMPROC with `AMHFIN` and `AMHFOUT`; `DS02BILD.jcl` for DS02BILD with `PARTFILE`; `DS02DSCT.jcl` for DS02DSCT) |
+| `output/` | SDSF SYSOUT screens for each program (`<PROGRAM>_SYSOUT.svg`); DS02BILD shows an ISPF Browse of its output file instead |
 | `.gitattributes`, `.gitignore` | Line-ending rules and ignored files |
 
 ## Roadmap
@@ -26,8 +26,8 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | 04 | Subroutines | | Planned |
 | 05 | Packed decimal | DT02ARTH, DT03CONV | Done |
 | 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress (EDMK pending) |
-| 07 | File I/O | QSAMPROC, BR09MTCH | In progress |
-| 08 | DSECTs | QSAMPROC, BR09MTCH (`DCBD` only) | In progress |
+| 07 | File I/O | QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT | In progress |
+| 08 | DSECTs | DS01DSCT, DS02DSCT, DS02BILD (`ORG` record layout only), QSAMPROC (`DCBD` only), BR09MTCH (`DCBD` only) | In progress |
 | 09 | Tables | | Planned |
 | 10 | Macros | | Planned |
 
@@ -49,7 +49,10 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | `BR09MTCH.asm` | 03, 07, 08 | Match-merge of two sorted 10-byte key files: priming read, `CLC` three-way decision, `FLUSH1` / `FLUSH2` / `MATCHED` paths write file-1-only, file-2-only and common keys, drain after end of file, `EODAD` routines with `HIVALUE`, `BAL 10` read routines, `OPENCHK` with `TM DCBOFLGS,DCBOFOPN` through `DCBD`, `ABEND 999,DUMP`, five packed counters printed to `SYSPRINT`. Input file contents not supplied; run counts 5 / 5 read, 4 / 4 / 1 written | Done |
 | `DT02ARTH.asm` | 05 | Packed decimal arithmetic in 15 examples: `ZAP`, `AP`, `SP`, `CP`, `MP`, `DP`, `SRP`, and `MVC` on packed data (shows the broken and the safe case); signed display with `PKDISP`, hex dump with `HEXDISP` | Done |
 | `DT03CONV.asm` | 05, 06 | Data conversions in 15 steps: `PACK` (clean, zoned, leading and trailing blanks, trailing minus), `CVB`, `CVD`, `UNPK`, `OI` and `MVZ` for printable zones, `ED` with simple and decimal point masks; hex dump with `HEXDISP`, binary display with `BINDISP` | Done |
-| `QSAMPROC.asm` | 07, 08 | QSAM control-break program: reads a sorted 559-byte file with `GET`, classifies each group with flag rules and a prefix table search, writes one comma-delimited record per group with `PUT`; EODAD and SYNAD exits, DCB open check through `DCBD`, two base registers, linkage register per calling level, packed counters. Test files: `data/QSAMPROC_AMHFIN.txt` (6 records, 3 groups) and `data/QSAMPROC_AMHFOUT.txt` (header and 3 detail records) | Done |
+| `QSAMPROC.asm` | 07, 08 | QSAM control-break program: reads a sorted 559-byte file with `GET`, classifies each group with flag rules and a prefix table search, writes one comma-delimited record per group with `PUT`; EODAD and SYNAD exits, DCB open check through `DCBD`, two base registers, linkage register per calling level, packed counters. Test files: `data/QSAMPROC_AMHFIN.txt` (6 records, 3 groups) and `data/QSAMPROC_AMHFOUT.txt` (header and 3 detail records). Run JCL: `jcl/QSAMPROC.jcl` | Done |
+| `DS01DSCT.asm` | 08 | A DSECT of our own: `CUSTD` layout (`CUSTNO`, `CUSTNAME`, `CUSTBAL`) at the end of the source with no storage of its own, mapped over two `DC` records with `LA 3,rec` and `USING CUSTD,3`, `DROP`, then `ORG` to name the packed balance a second time as characters (`CUSTBALC`, the REDEFINES equivalent) and `UNPK` of the packed view. Six SYSOUT lines; column 10 of each carries a stray byte (`N`, `B`, `B`, `Ø`) because `MVC OUTMSG(10)` copies 10 bytes from 9-byte literals. No data files; runs with the generic `jcl/ASMCLRUN.jcl` | Done |
+| `DS02BILD.asm` | 07, 08 | Builds the 5-record, 40-byte test file `PARTFILE` for the companion program DS02DSCT: `MVC` for part number and description, `ZAP` from packed literals for the `PL5` amount in columns 31-35, `PUT` in move mode, five times with no loop. The record area is `OUTREC DS 0CL40` with `ORG OUTREC+30` for `OUTAMT` and `ORG OUTREC+40` to close the record. No SYSOUT: the result is checked in ISPF Browse (`output/DS02BILD_SYSOUT.svg`, dataset name masked `HLQ.MLQ.TEST.PARTFILE`). The comment on the last `ORG` says "Step back" but the `ORG` moves forward. Run JCL: `jcl/DS02BILD.jcl` | Done |
+| `DS02DSCT.asm` | 07, 08 | Reads `PARTFILE` (built by DS02BILD) with `GET` and an `EODAD` exit and maps the 40-byte buffer `INAREA` with a DSECT (`PARTD`, packed `PARTAMT`). A second DSECT (`PARMD`) maps a parameter block built by `BUILDTOT` and passed in R1 to `ADDAMT`, which adds the amount to a packed `GRANDTOT`. Two call levels use R10 and R9. Prints 5 detail lines and the total 127943 to `SYSPRINT`. The first version abended S0C7: `GRANDTOT` was never set with `ZAP`; it also called `ADDAMT` with `BAL 10`, which would loop (final version `BAL 9`). Comments call the DSECT `PARTREC`; it is `PARTD`. Run JCL: `jcl/DS02DSCT.jcl` | Done |
 
 Add a row for each new program.
 
@@ -89,8 +92,8 @@ Source follows fixed-format HLASM columns.
 
 1. Copy the source to a partitioned dataset (member name = program name).
 2. For a program that reads or writes files, upload the files from `data/` as text to datasets with the record format and length the program expects (QSAMPROC: `RECFM=FB`, `LRECL=559`; BR09MTCH: `INFILE1` and `INFILE2` sorted, `RECFM=FB`, `LRECL=10`, plus output datasets for `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM`) and point the DD names at them in the JCL. Keep trailing blanks.
-3. Adjust and submit `jcl/ASMCLRUN.jcl` (assemble, link, go).
-4. The program writes to the `SYSOUT` DD (QSAMPROC and BR09MTCH: `SYSPRINT`). View it in SDSF and compare with `output/<PROGRAM>_SYSOUT.svg`. Compare any output file with its file in `data/`.
+3. Adjust and submit `jcl/ASMCLRUN.jcl` (assemble, link, go). BR09MTCH uses `jcl/BR09MTCH.jcl`: replace `HLQ.MLQ` with your own high and middle level qualifiers; `INFILE1` and `INFILE2` must exist, the three output datasets are created each run (`NEW,CATLG,DELETE`). QSAMPROC uses `jcl/QSAMPROC.jcl`: it assembles, link-edits and runs in three steps; change the `SET` statements (`PGMNAME`, `SOURCE`, `LOAD`) and the `AMHFIN` and `AMHFOUT` dataset names to your own; `AMHFIN` must exist and `AMHFOUT` is `NEW,CATLG,DELETE`, so delete it before a rerun.
+4. The program writes to the `SYSOUT` DD (QSAMPROC, BR09MTCH and DS02DSCT: `SYSPRINT`). View it in SDSF and compare with `output/<PROGRAM>_SYSOUT.svg`. Compare any output file with its file in `data/`. DS01DSCT lines carry one extra character in column 10 (`N`, `B`, `B`, `Ø`); it comes from the source, see `docs/DS01DSCT.md`. DS02BILD writes no SYSOUT: it creates `PARTFILE` (`jcl/DS02BILD.jcl`, `NEW,CATLG,DELETE`, delete before a rerun); view it in ISPF Browse and compare with `output/DS02BILD_SYSOUT.svg`. Browse shows the packed bytes in columns 31-35 as characters; `HEX ON` shows the real bytes. DS02DSCT reads that file: run DS02BILD first, then DS02DSCT (`jcl/DS02DSCT.jcl`, `PARTFILE` as `DISP=SHR`), and compare the SYSOUT with `output/DS02DSCT_SYSOUT.svg`.
 
 ## Notes
 

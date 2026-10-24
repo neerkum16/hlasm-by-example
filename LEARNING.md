@@ -8,6 +8,7 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 - Record what each instruction does, the registers it uses, and mistakes made.
 - Add a row to the topic map when a program is added.
 - Add a row to the test data table when a program has files in `data/`.
+- Add a row to the run JCL table when a program has its own JCL in `jcl/`.
 - Add a row to the concept article table when an article is written.
 - Add an entry to "Mistakes and Fixes" whenever something fails to assemble or runs wrong.
 
@@ -30,6 +31,9 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 05 Packed decimal | DT02ARTH | `src/DT02ARTH.asm` | `docs/DT02ARTH.md` | `output/DT02ARTH_SYSOUT.svg` |
 | 05 Packed decimal, 06 Editing | DT03CONV | `src/DT03CONV.asm` | `docs/DT03CONV.md` | `output/DT03CONV_SYSOUT.svg` |
 | 07 File I/O, 08 DSECTs | QSAMPROC | `src/QSAMPROC.asm` | `docs/QSAMPROC.md` | `output/QSAMPROC_SYSOUT.svg` |
+| 08 DSECTs | DS01DSCT | `src/DS01DSCT.asm` | `docs/DS01DSCT.md` | `output/DS01DSCT_SYSOUT.svg` |
+| 07 File I/O, 08 DSECTs | DS02BILD | `src/DS02BILD.asm` | `docs/DS02BILD.md` | `output/DS02BILD_SYSOUT.svg` (ISPF Browse of the output file, not SDSF) |
+| 07 File I/O, 08 DSECTs | DS02DSCT | `src/DS02DSCT.asm` | `docs/DS02DSCT.md` | `output/DS02DSCT_SYSOUT.svg` |
 
 ## Test Data
 
@@ -39,8 +43,27 @@ Programs that read or write files keep their test files in `data/`, named `<PROG
 |---|---|---|---|---|
 | QSAMPROC | AMHFIN | `data/QSAMPROC_AMHFIN.txt` | 6 x 559 | 3 groups: 85008 / D0A0V901 (ADM F, BR F), 85008 / D0A0W301 (ADM F), 85100 / W0A07001 (ADM F, CIT F, BR F) |
 | QSAMPROC | AMHFOUT | `data/QSAMPROC_AMHFOUT.txt` | 4 x 559 | Output of the run: header line and 3 detail records, all `SYSTEM ADMINISTRATOR` |
+| DS02BILD | PARTFILE | none | 5 x 40 | Created by the program, not stored in `data/`: columns 31-35 are packed decimal and would be damaged by a text upload. Contents are in `docs/DS02BILD.md` |
+| DS02DSCT | PARTFILE | none | 5 x 40 | Input: the file DS02BILD creates. See the DS02BILD row |
 
 BR09MTCH has no files in `data/` yet: its input and output files were not supplied (see Open Questions).
+
+DS01DSCT has no files in `data/`: its two records are `DC` constants in the source, and it runs with the generic `jcl/ASMCLRUN.jcl`.
+
+## Run JCL
+
+Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its own files has its own member, `jcl/<PROGRAM>.jcl`. Each has three steps: `ASMA90` (assemble), `HEWL` (link) and the program step, with `COND` on the earlier steps. Only `PGMNAME` and the program step DDs differ.
+
+| Program | JCL | Program step DDs |
+|---|---|---|
+| QSAMPROC | `jcl/QSAMPROC.jcl` | `AMHFIN` `DISP=SHR`; `AMHFOUT` `NEW,CATLG,DELETE`, `FB`, `LRECL=559`; `SYSPRINT`, `SYSOUT`, `SYSUDUMP` to `SYSOUT=*` |
+| BR09MTCH | `jcl/BR09MTCH.jcl` | Two inputs and three outputs |
+| DS02BILD | `jcl/DS02BILD.jcl` | `PARTFILE` `NEW,CATLG,DELETE`, `FB`, `LRECL=40`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Dataset names use the masked qualifiers `HLQ.MLQ` |
+| DS02DSCT | `jcl/DS02DSCT.jcl` | `PARTFILE` `DISP=SHR` (the file DS02BILD created); `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Output is on `SYSPRINT` |
+
+`AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD.
+
+`jcl/DS02DSCT.jcl` has the same three steps as `jcl/DS02BILD.jcl`; only `PGMNAME` and the `PARTFILE` DD differ (`DISP=SHR`, nothing is created). Run DS02BILD first.
 
 ## Concept Articles
 
@@ -254,6 +277,8 @@ Also listed under 07 File I/O and 08 DSECTs. The file handling is in the 07 sect
 
 ## 04 Subroutines
 
+DS02DSCT already uses two call levels and a parameter list in R1; see its notes under 08 DSECTs. Level 1 calls use `BAL 10` / `BR 10`, the call from inside a level 1 routine uses `BAL 9` / `BR 9`.
+
 Planned.
 
 ## 05 Packed Decimal (DT02ARTH, DT03CONV)
@@ -333,7 +358,7 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 - The packed source must be a valid packed field; `ED` reads the digits two per byte.
 - `EDMK` is not covered yet.
 
-## 07 File I/O (QSAMPROC, BR09MTCH)
+## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT)
 
 Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`.
 
@@ -370,7 +395,23 @@ Notes:
 - Linkage registers by calling level: R10 level 1, R9 level 2, R8 level 3, R7 `PRTMSG`. A routine must not use the register that holds its own return address for a further call.
 - The three DCBs (AMHFIN, AMHFOUT, SYSPRINT) are at the end of the program, followed by `LTORG` and then `DCBD`. A DCB continuation line carries `X` in column 72.
 - Test run with `data/QSAMPROC_AMHFIN.txt`: 6 records read, 3 written. SYSPRINT shows `RECORDS R000000006` and `RECORDS W000000003`. The `R` and `W` come from the count being placed one byte inside the label text.
+- Run JCL is `jcl/QSAMPROC.jcl`: assemble (`ASMA90`), link (`HEWL`), run. `AMHFIN` is `DISP=SHR`; `AMHFOUT` is `NEW,CATLG,DELETE` with `RECFM=FB,LRECL=559`, so delete the output dataset before a rerun.
 - The test file only covers rule R1, so every group is `SYSTEM ADMINISTRATOR`. Records for R2, R3, `REGULAR USER` and `READ ONLY USER` are still to be added.
+
+### DS02BILD: building a file with packed data
+
+- Output file with `OPEN (PARTFILE,(OUTPUT))`, `PUT PARTFILE,OUTREC` (move mode, `MACRF=PM`), `CLOSE (PARTFILE)`. The DCB has `RECFM=FB,LRECL=40,BLKSIZE=0`; the JCL DD repeats `FB`, `LRECL=40`, `BLKSIZE=0` and uses `NEW,CATLG,DELETE`.
+- A file with packed fields cannot be typed in an editor, so a program builds it: `MVC OUTREC,BLANKS40`, `MVC` for the character fields, `ZAP OUTAMT,=P'n'` for the packed field, `PUT`. `ZAP` from a packed literal stores the sign nibble `C`.
+- Browse shows packed bytes as characters: X'5C' is `*`, X'50' is `&`, X'99' is `r`, X'9C' is `æ`, the rest `.`. `HEX ON` shows the real bytes.
+- The result is checked in ISPF Browse, so `output/DS02BILD_SYSOUT.svg` is a Browse screen and not an SDSF screen. DS02DSCT reads the file.
+
+### DS02DSCT: reading PARTFILE
+
+- Input DCB `PARTFILE DCB DSORG=PS,MACRF=GM,DDNAME=PARTFILE,EODAD=EOFRTN,RECFM=FB,LRECL=40,BLKSIZE=0`. `GET PARTFILE,INAREA` in move mode copies each record into the 40-byte buffer `INAREA`.
+- Priming read before the loop, read again at the bottom of each pass, loop ends on `EOFSW` = `Y`. `EOFRTN` sets the switch and returns with `BR 10` (R10 was set by `BAL 10,READREC`).
+- Output goes to `SYSPRINT`. Amounts are shown with `UNPK ZONE7,PARTAMT` and `OI ZONE7+6,X'F0'` (7 digits); the total uses `UNPK ZONE11,GRANDTOT` and `OI ZONE11+10,X'F0'` (11 digits).
+- The file must be the one DS02BILD built: packed `PARTAMT` at displacement 30. A text-edited copy loses the sign nibbles and `AP` abends with S0C7.
+- Result with the DS02BILD data: 5 detail lines and `RUNNING TOTAL - 00000127943` (12345 + 500 + 99999 + 0 + 15099).
 
 ### BR09MTCH: two inputs, three outputs
 
@@ -390,7 +431,7 @@ Notes:
 - `DCBD DSORG=PS,DEVD=DA` at the end of the program generates the `IHADCB` DSECT (a map, no storage).
 - `DCBD` must be the last statement before `END`: a DSECT ends the current control section, so no real storage can be defined after it. `LTORG` goes before it.
 - `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `TM` tests only the bits that are ones in the mask; `BNO` branches when the tested bit is off.
-- Other DSECT topics are not covered yet.
+- A DSECT defined in the program itself, `USING` and `DROP` on it, and `ORG` are in DS01DSCT below. A DSECT for a record read with `GET`, or one passed in by a caller, is not covered yet.
 
 ### BR09MTCH: DCB open check as a routine
 
@@ -398,6 +439,37 @@ Notes:
 - Between `BAL` and `BNO` nothing may change the condition code; `DROP` and `BR` do not.
 - One routine serves all six DCBs because `USING IHADCB,2` maps the dummy section over whichever DCB R2 points at.
 - `DCBD DSORG=PS,DEVD=DA` follows `LTORG` and is the last statement before `END`.
+
+### DS01DSCT: a DSECT of our own, USING, DROP and ORG
+
+- A DSECT is a map of names and displacements. It has no storage and no object code; `CUSTD DSECT` ends the CSECT, and assembling it alone gives zero bytes.
+- To use it, point a register at real storage and issue `USING`: `LA 3,CUSTREC`, `USING CUSTD,3`. Each name then assembles as register plus displacement: `CUSTNO` is `0(3)`, `CUSTNAME` is `8(3)`, `CUSTBAL` is `28(3)`. `USING` generates no instruction, so `LA` must run before the first use.
+- `DROP 3` ends the mapping. `LA 3,CUSTREC2` and `USING CUSTD,3` map the same layout over another record; the names do not change.
+- An operand with no length takes it from the `DS`: `UNPK ZONE,CUSTBAL` uses 5 from `PL5`.
+- `ORG CUSTBAL` inside the DSECT sets the location counter back to displacement 28, so `CUSTBALC DS CL5` names the same 5 bytes as characters. This is the REDEFINES equivalent. No data is copied; the name used decides how the bytes are read.
+- Record length is the sum of the fields: 8 + 20 + 5 = 33. The source comments say 30.
+- The DSECT follows `LTORG` and is the last item before `END`, as with `DCBD`.
+- A `=C'...'` literal is as long as its text. `MVC OUTMSG(10),=C'CUST NO: '` copies 10 bytes from a 9-byte literal; the tenth byte is the first byte of the next literal in the pool (the pool is in order of first use). The run shows `N`, `B`, `B` and `Ø` in column 10. Use `=CL10'CUST NO:'` or length 9.
+- `UNPK ZONE,CUSTBAL` with a 5-byte `ZONE` uses the low 3 bytes of the packed field and shows 5 digits (`12345`). X'000012345C' read as characters shows only `*` (X'5C').
+- Output: `CUST NO: N10023456`, `NAME:    BJOHN SMITH`, `CUST NO: N99887766`, `NAME:    BJANE DOE`, `BAL HEX: B12345`, `BAL RAW: Ø    *`. The `BAL HEX:` label is misleading: the line shows decimal digits, not hex.
+
+### DS02BILD: ORG to place a field in a record area
+
+- `OUTREC DS 0CL40` defines the record with length 40 and reserves no bytes. `ORG OUTREC+30` moves the location counter to displacement 30, `OUTAMT DS PL5` is defined there (column 31), and `ORG OUTREC+40` moves the counter to the end of the record.
+- This is the same layout as `PARTD` in DS02DSCT, made with `ORG` in a CSECT instead of a DSECT. The two displacements must match; nothing checks it.
+- Without the final `ORG` the counter stops at `OUTREC+35` and the DCB that follows is assembled over the end of the record area.
+- `MVC OUTREC,BLANKS40` takes length 40 from the `0CL40` label.
+- The comment on `ORG OUTREC+40` says "Step back", but the `ORG` moves forward (30 to 40).
+
+### DS02DSCT: a DSECT over a read buffer, and a parameter list DSECT
+
+- `PARTD DSECT` (`PARTNO` CL8 +0, filler CL2, `PARTDESC` CL20 +10, `PARTAMT` PL5 +30, filler CL5) is laid over `INAREA` with `LA 3,INAREA` and `USING PARTD,3`. `INAREA` has no field names; the DSECT supplies them. This is the normal use of a DSECT: a buffer filled by `GET`.
+- A second DSECT, `PARMD` (`PARMAMT` PL5 +0, `PARMTOT` PL6 +5), maps the parameter block `PARMAREA DS CL11`. `LA 1,PARMAREA` puts its address in R1, by convention the parameter list register.
+- Two `USING`s can be active at once: `MVC PARMAMT,PARTAMT` assembles with base R1 for the target and base R3 for the source.
+- `DROP` does not change a register. R1 still holds the block address when `BAL 9,ADDAMT` runs, and `ADDAMT` issues its own `USING PARMD,1`.
+- `ADDAMT` uses `PARMAMT` from the block but updates `GRANDTOT` by name. `PARMTOT` is never used.
+- Both DSECTs follow `LTORG`, in order, directly before `END`.
+- Comments call the record DSECT `PARTREC`; the DSECT is `PARTD`.
 
 ## 09 Tables
 
@@ -416,6 +488,13 @@ Planned.
 | 2026-10-16 | QSAMPROC | ASMA068S on the blank constant | A `DC` of type C was coded as `CL349`; the limit for a `DC` of type C is 256 bytes | Use `DS` for the large area, or split the constant (`CL256` plus `CL93`) |
 | 2026-10-16 | QSAMPROC | ASMA034E operand beyond active `USING` range | Program longer than 4096 bytes with one base register | `USING QSAMPROC,12,11` with R11 = R12 + 4096 |
 | 2026-10-16 | QSAMPROC | S0C1 at run time | `PUT` to SYSPRINT before it was opened | `OPEN` SYSPRINT before the first `PUT`; close it last |
+| 2026-10-24 | DS01DSCT | Lines show `N`, `B`, `B`, `Ø` in column 10 (`CUST NO: N10023456`) | `MVC OUTMSG(10),=C'CUST NO: '` copies 10 bytes from a 9-byte literal; the tenth byte is the first byte of the next literal in the pool (the byte after the pool for the last one) | Code unchanged; code the labels as 10 bytes (`=CL10'CUST NO:'`) or copy 9 bytes |
+| 2026-10-24 | DS01DSCT | Comments say the records are 30 bytes | `CL8` + `CL20` + `PL5` is 33 bytes | Comment is wrong, code unchanged |
+| 2026-10-24 | DS02DSCT | S0C7 at `AP GRANDTOT,PARMAMT` on the first record | `GRANDTOT DS PL6` has no value. `AP` needs valid packed data, and even all zeros has no sign nibble | `ZAP GRANDTOT,=P'0'` before the first `AP` |
+| 2026-10-24 | DS02DSCT | `BUILDTOT` would loop at its own `BR 10` once the S0C7 was fixed | `BAL 10,ADDAMT` overwrote R10, the return address to `MAINLOOP` | `BAL 9,ADDAMT` and `BR 9` in `ADDAMT`: one return register per call level |
+| 2026-10-24 | DS02DSCT | Comments refer to a `PARTREC` DSECT | The DSECT is named `PARTD` | Comments are wrong, code unchanged |
+| 2026-10-24 | DS02BILD | Comment on `ORG OUTREC+40` says "Step back" | The `ORG` moves the counter forward from 30 to 40 | Comment is wrong, code unchanged |
+| 2026-10-24 | DS02BILD | Browse shows `....*` in columns 31-35 | Browse displays packed bytes as characters | Not an error; use `HEX ON` to see X'000012345C' |
 
 ## Open Questions
 
