@@ -23,7 +23,7 @@ Hands-on IBM High Level Assembler (HLASM) programs for z/OS: register arithmetic
 | 01 | Basics: linkage, SYSOUT I/O, data types | HELLO, DT01TYPE | Done |
 | 02 | Registers and arithmetic | REGCALC | Done |
 | 03 | Branching and looping | BR01CMP, BR02MASK, BR03LOOP, BR04BXLE, BR05TABL, BR06NEST, BR07CASE, BR08SRCH, BR09MTCH | Done |
-| 04 | Subroutines | | Planned |
+| 04 | Subroutines | None yet; internal `BAL` routines are in `docs/concepts/SUBROUTINES.md` | Planned |
 | 05 | Packed decimal | DT02ARTH, DT03CONV | Done |
 | 06 | Editing (ED/EDMK) | DT03CONV (ED only) | In progress (EDMK pending) |
 | 07 | File I/O | QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT | In progress |
@@ -72,6 +72,12 @@ Each article explains one idea that runs across several programs. It starts with
 | `PACKED-ARITHMETIC.md` | 05 | DT02ARTH | Operand length rules for `ZAP`, `AP`, `MP`, `DP`, `SRP` |
 | `DATA-CONVERSIONS.md` | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | Conversion map and `ED` pattern rules |
 | `QSAM-CONTROL-BREAK.md` | 07 | QSAMPROC | `GET` and `PUT` in move mode, open and close order, priming read, group reset |
+| `DSECTS.md` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH | A DSECT is a map with no storage; `LA`, `USING` and `DROP` join it to real storage; two maps at once; `DCBD`; placement before `END` |
+| `RECORD-LAYOUTS.md` | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT | `DS 0CLn` records, `ORG` to place a field, `ORG` in a DSECT as REDEFINES, closing `ORG` |
+| `PACKED-VALIDITY.md` | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC | A valid sign nibble is needed before `AP`; initialise with `ZAP`; S0C7; building a packed test file; `HEX ON` in Browse |
+| `SUBROUTINES.md` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH | `BAL` and `BR`, one return register per call level, parameter block in R1, `EODAD` routine as a return path |
+| `MATCH-MERGE.md` | 03, 07 | BR09MTCH | Two sorted files, one current record each, `CLC` three-way decision, drain after end of file, `HIVALUE` |
+| `OPERAND-LENGTHS.md` | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC | Implied and explicit operand lengths, literal length, fixed `CL50` messages, truncation by `UNPK` zones |
 
 Add a row when an article is written.
 

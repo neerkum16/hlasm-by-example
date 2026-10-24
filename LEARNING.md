@@ -81,8 +81,14 @@ Each article starts with a Scope line that states what the programs exercise.
 | Packed decimal arithmetic | 05 | DT02ARTH | `docs/concepts/PACKED-ARITHMETIC.md` |
 | Data conversions and editing | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | `docs/concepts/DATA-CONVERSIONS.md` |
 | QSAM processing and control break | 07 | QSAMPROC | `docs/concepts/QSAM-CONTROL-BREAK.md` |
+| DSECTs, `USING` and `DROP` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH | `docs/concepts/DSECTS.md` |
+| Record layouts: `DS 0CLn`, `ORG` and REDEFINES | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT | `docs/concepts/RECORD-LAYOUTS.md` |
+| Packed data validity, initialisation and test files | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC | `docs/concepts/PACKED-VALIDITY.md` |
+| Internal subroutines with `BAL` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH | `docs/concepts/SUBROUTINES.md` |
+| Match-merge of two sorted files | 03, 07 | BR09MTCH | `docs/concepts/MATCH-MERGE.md` |
+| Operand lengths: implied and explicit | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC | `docs/concepts/OPERAND-LENGTHS.md` |
 
-Planned articles: subroutines with `BAL` (after a topic 04 program) and DSECTs (after a program that maps a record layout).
+Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used), `QSAM-CONTROL-BREAK.md` and `CONDITION-CODE.md` (new source programs).
 
 ## Register Conventions
 
@@ -96,7 +102,7 @@ Planned articles: subroutines with `BAL` (after a topic 04 program) and DSECTs (
 
 ## 01 Basics (HELLO)
 
-Concept articles: `docs/concepts/LINKAGE.md`, `docs/concepts/DATA-TYPES.md`.
+Concept articles: `docs/concepts/LINKAGE.md`, `docs/concepts/DATA-TYPES.md`, `docs/concepts/OPERAND-LENGTHS.md`.
 
 - Entry linkage: `STM 14,12,12(13)`, `LR 12,15`, `USING name,12`, `ST 13,SAVEAREA+4`, `LA 13,SAVEAREA`.
 - Exit linkage: `L 13,SAVEAREA+4`, `LM 14,12,12(13)`, `SR 15,15`, `BR 14`.
@@ -141,7 +147,7 @@ Concept articles: `docs/concepts/REGISTER-PAIRS.md`, `docs/concepts/DATA-CONVERS
 
 ## 03 Branching and Looping
 
-Concept articles: `docs/concepts/CONDITION-CODE.md`, `docs/concepts/LOOP-CONTROL.md`, `docs/concepts/TABLES.md`, `docs/concepts/MULTIWAY-DECISIONS.md`, `docs/concepts/REGISTER-PAIRS.md`.
+Concept articles: `docs/concepts/CONDITION-CODE.md`, `docs/concepts/LOOP-CONTROL.md`, `docs/concepts/TABLES.md`, `docs/concepts/MULTIWAY-DECISIONS.md`, `docs/concepts/REGISTER-PAIRS.md`, `docs/concepts/MATCH-MERGE.md`.
 
 ### BR01CMP: compare instructions and conditional branches
 
@@ -279,11 +285,13 @@ Also listed under 07 File I/O and 08 DSECTs. The file handling is in the 07 sect
 
 DS02DSCT already uses two call levels and a parameter list in R1; see its notes under 08 DSECTs. Level 1 calls use `BAL 10` / `BR 10`, the call from inside a level 1 routine uses `BAL 9` / `BR 9`.
 
+Concept article: `docs/concepts/SUBROUTINES.md`. Topic 04 has no dedicated program yet and stays Planned.
+
 Planned.
 
 ## 05 Packed Decimal (DT02ARTH, DT03CONV)
 
-Concept articles: `docs/concepts/PACKED-ARITHMETIC.md`, `docs/concepts/DATA-CONVERSIONS.md`.
+Concept articles: `docs/concepts/PACKED-ARITHMETIC.md`, `docs/concepts/DATA-CONVERSIONS.md`, `docs/concepts/PACKED-VALIDITY.md`.
 
 ### DT02ARTH: packed decimal arithmetic
 
@@ -360,7 +368,7 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 
 ## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT)
 
-Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`.
+Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`, `docs/concepts/MATCH-MERGE.md`, `docs/concepts/SUBROUTINES.md`, `docs/concepts/PACKED-VALIDITY.md`.
 
 ### QSAMPROC: QSAM control break
 
@@ -426,12 +434,14 @@ Notes:
 
 ## 08 DSECTs
 
+Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, `docs/concepts/OPERAND-LENGTHS.md`.
+
 ### QSAMPROC: DCB open check
 
 - `DCBD DSORG=PS,DEVD=DA` at the end of the program generates the `IHADCB` DSECT (a map, no storage).
 - `DCBD` must be the last statement before `END`: a DSECT ends the current control section, so no real storage can be defined after it. `LTORG` goes before it.
 - `LA 2,dcb`, `USING IHADCB,2`, `TM DCBOFLGS,DCBOFOPN`, `DROP 2`, `BNO error`. `TM` tests only the bits that are ones in the mask; `BNO` branches when the tested bit is off.
-- A DSECT defined in the program itself, `USING` and `DROP` on it, and `ORG` are in DS01DSCT below. A DSECT for a record read with `GET`, or one passed in by a caller, is not covered yet.
+- A DSECT defined in the program itself, `USING` and `DROP` on it, and `ORG` are in DS01DSCT below. A DSECT over a record read with `GET` and a DSECT for a parameter block passed in R1 are in DS02DSCT below.
 
 ### BR09MTCH: DCB open check as a routine
 
