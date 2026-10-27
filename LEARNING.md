@@ -34,6 +34,8 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 08 DSECTs | DS01DSCT | `src/DS01DSCT.asm` | `docs/DS01DSCT.md` | `output/DS01DSCT_SYSOUT.svg` |
 | 07 File I/O, 08 DSECTs | DS02BILD | `src/DS02BILD.asm` | `docs/DS02BILD.md` | `output/DS02BILD_SYSOUT.svg` (ISPF Browse of the output file, not SDSF) |
 | 07 File I/O, 08 DSECTs | DS02DSCT | `src/DS02DSCT.asm` | `docs/DS02DSCT.md` | `output/DS02DSCT_SYSOUT.svg` |
+| 07 File I/O, 08 DSECTs | VB01BILD | `src/VB01BILD.asm` | `docs/VB01BILD.md` | `output/VB01BILD_SYSOUT.svg` (ISPF Browse of the output file, not SDSF) |
+| 07 File I/O, 08 DSECTs | VB01LOC | `src/VB01LOC.asm` | `docs/VB01LOC.md` | `output/VB01LOC_SYSOUT.svg` |
 
 ## Test Data
 
@@ -45,6 +47,9 @@ Programs that read or write files keep their test files in `data/`, named `<PROG
 | QSAMPROC | AMHFOUT | `data/QSAMPROC_AMHFOUT.txt` | 4 x 559 | Output of the run: header line and 3 detail records, all `SYSTEM ADMINISTRATOR` |
 | DS02BILD | PARTFILE | none | 5 x 40 | Created by the program, not stored in `data/`: columns 31-35 are packed decimal and would be damaged by a text upload. Contents are in `docs/DS02BILD.md` |
 | DS02DSCT | PARTFILE | none | 5 x 40 | Input: the file DS02BILD creates. See the DS02BILD row |
+| VB01BILD | OUTFILE | none | 5 variable, 17 to 37 bytes with RDW | Created by the program, not stored in `data/`: each record starts with a binary RDW and has a packed amount, so a text file cannot hold it. Contents are in `docs/VB01BILD.md` |
+| VB01LOC | INFILE | none | 5 variable, 17 to 37 bytes with RDW | Input: the file VB01BILD creates. See the VB01BILD row |
+| VB01LOC | OUTFILE | none | 5 variable, written by the program | Created by the program, not stored in `data/`. Not browsed, so its contents are not recorded |
 
 BR09MTCH has no files in `data/` yet: its input and output files were not supplied (see Open Questions).
 
@@ -60,8 +65,10 @@ Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its ow
 | BR09MTCH | `jcl/BR09MTCH.jcl` | Two inputs and three outputs |
 | DS02BILD | `jcl/DS02BILD.jcl` | `PARTFILE` `NEW,CATLG,DELETE`, `FB`, `LRECL=40`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Dataset names use the masked qualifiers `HLQ.MLQ` |
 | DS02DSCT | `jcl/DS02DSCT.jcl` | `PARTFILE` `DISP=SHR` (the file DS02BILD created); `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Output is on `SYSPRINT` |
+| VB01BILD | `jcl/VB01BILD.jcl` | `OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Dataset names use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM` |
+| VB01LOC | `jcl/VB01LOC.jcl` | `INFILE` is `HLQ.MLQ.VB01BILD.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.VB01LOC.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. The screenshot of the submitted job showed an ACF2 comment line (`$ACFJ219 ACF2 ACTIVE`) added by the system; it is not in the member and not in the file. Masked as for VB01BILD (`HLQ.MLQ`, job name `MLQM`) |
 
-`AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD.
+`AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD `HLQ.MLQ.VB01BILD.OUTFILE` of VB01BILD and `HLQ.MLQ.VB01LOC.OUTFILE` of VB01LOC.
 
 `jcl/DS02DSCT.jcl` has the same three steps as `jcl/DS02BILD.jcl`; only `PGMNAME` and the `PARTFILE` DD differ (`DISP=SHR`, nothing is created). Run DS02BILD first.
 
@@ -88,7 +95,7 @@ Each article starts with a Scope line that states what the programs exercise.
 | Match-merge of two sorted files | 03, 07 | BR09MTCH | `docs/concepts/MATCH-MERGE.md` |
 | Operand lengths: implied and explicit | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC | `docs/concepts/OPERAND-LENGTHS.md` |
 
-Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used), `QSAM-CONTROL-BREAK.md` and `CONDITION-CODE.md` (new source programs).
+Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used), `QSAM-CONTROL-BREAK.md` and `CONDITION-CODE.md` (new source programs), `DSECTS.md` and `OPERAND-LENGTHS.md` (VB01BILD and VB01LOC: DSECT over a locate-mode buffer, explicit-length `MVC` for a variable field, `EX` for a run-time length).
 
 ## Register Conventions
 
@@ -366,7 +373,7 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 - The packed source must be a valid packed field; `ED` reads the digits two per byte.
 - `EDMK` is not covered yet.
 
-## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT)
+## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT, VB01BILD, VB01LOC)
 
 Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`, `docs/concepts/MATCH-MERGE.md`, `docs/concepts/SUBROUTINES.md`, `docs/concepts/PACKED-VALIDITY.md`.
 
@@ -432,6 +439,29 @@ Notes:
 - Counters `PL4` with `ZONE CL7`: `UNPK ZONE,CNT`, `OI ZONE+6,X'F0'`, `MVC PRTLINE+21(7),ZONE`. Labels are `CL20`, so the number is always at column 22. A count over 9999999 loses its leftmost digit.
 - Data layout: all data, constants, DCBs and `LTORG` come after the last `BR`, then `DCBD`, then `END`.
 
+### VB01BILD: variable length records in locate mode
+
+- DCB `OUTFILE DCB DSORG=PS,MACRF=PL,DDNAME=OUTFILE,RECFM=VB,LRECL=37,BLKSIZE=0`. `MACRF=PL` is put in locate mode. For `RECFM=VB`, `LRECL` is the longest record including its 4-byte RDW: 17 fixed bytes plus a 20-byte name = 37.
+- Locate mode: `PUT OUTFILE` has no area operand. QSAM returns the address of an empty buffer in R1. `LR 4,1` saves it at once; the next system macro changes R1.
+- The record is the RDW (`OUTRDWLL` H, the length of the whole record including the RDW; `OUTRDWFL` H, flags set to zero with `XC`), `OUTCUSTNO` CL8, `OUTAMOUNT` PL5 and the name. Fixed part 17 bytes, so RDW length = name length + 17: 29, 22, 37, 17, 27 for names of 12, 5, 20, 0 and 10 bytes.
+- Fields are filled with `MVC OUTRDWLL,=H'n'`, `MVC OUTCUSTNO,=CL8'P10000n'`, `ZAP OUTAMOUNT,=P'n'` and `MVC OUTNAME(len),=CLlen'name'`. The `MVC` length is explicit because the builder knows each name length at assembly time; a reader that learns the length from the RDW at run time needs `EX`.
+- A machine `MVC` moves at least one byte. For the empty name (record 4) there is no `MVC`; only the RDW length 17 says the name is absent.
+- `PUT` does not clear the buffer. Every byte inside the record length is set by the program.
+- A record is complete at the next `PUT` or at `CLOSE`: the fifth record is written by `CLOSE (OUTFILE)`.
+- The file is checked in ISPF Browse (`output/VB01BILD_SYSOUT.svg`, name masked `HLQ.MLQ.VB01BILD.OUTFILE`). Browse does not show the RDW, so the longest line is 33 characters (`Col 001 033`), and the packed bytes show as characters (`*`, `&`, `r`, `æ`, `.`). `HEX ON` shows the RDW and the packed bytes.
+- Result: 5 records, `P100001` to `P100005`, amounts 12345, 500, 99999, 0 and 15099.
+
+### VB01LOC: reading variable length records in locate mode, and EX
+
+- Input DCB `INFILE DCB DSORG=PS,MACRF=GL,DDNAME=INFILE,EODAD=EOFRTN,RECFM=VB,LRECL=37,BLKSIZE=0`. `MACRF=GL` is get in locate mode: `GET INFILE` has no area operand and R1 returns the address of the record, RDW included. Save it at once (`LR 3,1`).
+- The record length is read from the RDW (`LH 5,INRDWLL`). Name length = RDW length - 17 (`S 5,=F'17'`), because the RDW, `INCUSTNO` and `INAMOUNT` take 17 bytes.
+- `EX reg,target` takes the SS instruction at `target`, replaces its length byte with the low byte of `reg`, and runs that one instruction. The target is coded with length 1, which assembles to a length byte of zero, so the register value is the length used. The register must hold the length minus 1: `BCTR 5,0`.
+- `MVCSHOWN MVC PRTLINE+20(1),INNAME` and `MVCBUILD MVC OUTNAME(1),INNAME` are the two targets. The stored instructions are not changed.
+- End of file: `EODAD=EOFRTN` names the routine `GET` branches to; it sets `EOFSW` to `Y`, and `MAINLOOP` tests it with `CLI`. R3 keeps the last record address after the `EODAD` branch.
+- Output in locate mode: `PUT OUTFILE`, `LR 4,1`, `USING VBOUTRECD,4`; the RDW length is `NAMELEN` + 17 stored with `STH`, the flag halfword is zeroed with `XC`, the amount is copied with `ZAP`. The record is written by the next `PUT` or by `CLOSE`.
+- An empty name is the failure case. `NAMELEN` is 0, `BCTR` gives -1, the low byte is X'FF', and `EX` moves 256 bytes. In `SHOWREC` the source is the start of the next record (RDW, `P100005`, amount, name), shown at column 25 of line 5 of the output; the destination is `PRTLINE+20`, 196 bytes past the end of `PRTLINE` (80 bytes). By the data layout the move covers `ZONE7`, `BLANKS`, `MSGSTRT` and `MSGEND`; the end message is not printed (a blank line appears instead). Check the length before `EX`: zero must skip the move.
+- Output of the run (`output/VB01LOC_SYSOUT.svg`): the start message, 5 detail lines (line 5 wrong), a blank line where the end message should be, and `RECORDS READ  : 0000005`.
+
 ## 08 DSECTs
 
 Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, `docs/concepts/OPERAND-LENGTHS.md`.
@@ -481,6 +511,21 @@ Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, 
 - Both DSECTs follow `LTORG`, in order, directly before `END`.
 - Comments call the record DSECT `PARTREC`; the DSECT is `PARTD`.
 
+### VB01BILD: a DSECT over a locate-mode buffer
+
+- `VBOUTRECD DSECT` has `OUTRDWLL` H (+0), `OUTRDWFL` H (+2), `OUTCUSTNO` CL8 (+4), `OUTAMOUNT` PL5 (+12) and `OUTNAME DS 0CL1` (+17). `OUTNAME` reserves no bytes; it names the displacement where the variable part starts, and each `MVC` gives its own length.
+- The register comes from the system, not from `LA`: `PUT OUTFILE` returns the buffer address in R1, `LR 4,1`, `USING VBOUTRECD,4`. `DROP 4` follows each record, because the next `PUT` returns a different address.
+- The layout is the same as `VBINRECD` in the reader VB01LOC (H, H, CL8, PL5, 0CL1). Nothing checks that the two agree, so a change in one needs the same change in the other.
+- The DSECT follows `LTORG` and is the last item before `END`, as in the other programs.
+- A label of 9 characters (`OUTCUSTNO`, `OUTAMOUNT`, `VBOUTRECD`) leaves no blank in column 10, so its opcode starts in column 11; the operand stays in column 16.
+
+### VB01LOC: two DSECTs at once
+
+- `VBINRECD` is mapped on R3 (input record from `GET`) and `VBOUTRECD` on R4 (output buffer from `PUT`); both are active inside `BUILDOUT`. The two DSECTs have the same layout and different field names (`IN...`, `OUT...`), so every reference names one record only.
+- Both registers come from R1 of the system macros, so each is saved with `LR` before the next macro. `DROP 3` and `DROP 4` end the mappings after `MVCBUILD`.
+- `INNAME DS 0CL1` and `OUTNAME DS 0CL1` reserve nothing; they name displacement 17. The length of the data from there is not in the DSECT: it comes from the RDW.
+- `VBINRECD`, `VBOUTRECD` and `DCBD DSORG=PS,DEVD=DA` come after `LTORG` and directly before `END`.
+
 ## 09 Tables
 
 Planned. The serial search and indexed stepping used so far are in `docs/concepts/TABLES.md`.
@@ -505,8 +550,13 @@ Planned.
 | 2026-10-24 | DS02DSCT | Comments refer to a `PARTREC` DSECT | The DSECT is named `PARTD` | Comments are wrong, code unchanged |
 | 2026-10-24 | DS02BILD | Comment on `ORG OUTREC+40` says "Step back" | The `ORG` moves the counter forward from 30 to 40 | Comment is wrong, code unchanged |
 | 2026-10-24 | DS02BILD | Browse shows `....*` in columns 31-35 | Browse displays packed bytes as characters | Not an error; use `HEX ON` to see X'000012345C' |
+| 2026-10-27 | VB01BILD | Browse shows `Col 001 033` and no RDW | Browse shows only the data of a `RECFM=VB` record; the longest record is 37 bytes with the 4-byte RDW | Not an error; `HEX ON` shows the RDW |
+| 2026-10-27 | VB01LOC | Line 5 of the output shows `P100005` and its data after `P100004`, and the end message is blank | Record 4 has an empty name: R5 = -1 after `BCTR`, `EX` uses X'FF', and the `MVC` moves 256 bytes into an 80-byte `PRTLINE` | Not fixed in the source. Test the length before `EX` and skip the move when it is zero |
+| 2026-10-27 | VB01LOC | Comments say a length of 0 in the register is harmless | An empty name gives -1, not 0 | Comment is incomplete, code unchanged |
+| 2026-10-27 | VB01LOC | JCL screenshot has a line `//* $ACFJ219 ACF2 ACTIVE TDBK013` | The system adds it to the submitted job | Not part of the member; left out of `jcl/VB01LOC.jcl` |
 
 ## Open Questions
 
 - QSAMPROC: test records for rules R2 and R3, `REGULAR USER` and `READ ONLY USER`, a group whose records carry an ACF2 id, and an empty input file.
 - BR09MTCH: the contents of `INFILE1`, `INFILE2`, `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM` for the run with 5 / 5 records read, to be added to `data/`. Cases still to test: an empty file 1, an empty file 2, both empty, a repeated key in one file, and an open failure (missing DD).
+- VB01LOC: the length check before `EX` (empty name), the contents of `HLQ.MLQ.VB01LOC.OUTFILE` after the run, and whether the overrun changed anything else in storage. The end message is missing in the SYSOUT; the bytes that replaced it are not shown.

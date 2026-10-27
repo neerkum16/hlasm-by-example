@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 992 608" width="992" height="608" role="img" aria-label="ISPF Browse of HLQ.MLQ.VB01LOC.OUTFILE">
+<rect width="100%" height="100%" fill="#000000"/>
+<g font-family="&#x27;IBM Plex Mono&#x27;,&#x27;Lucida Console&#x27;,&#x27;Courier New&#x27;,Courier,monospace" font-size="20" font-weight="700">
+<g transform="translate(0,16)">
+<text x="52 64 76 88" y="18" fill="#e8e8e8">Menu</text>
+<text x="124 136 148 160 172 184 196 208 220" y="18" fill="#e8e8e8">Utilities</text>
+<text x="256 268 280 292 304 316 328 340 352" y="18" fill="#e8e8e8">Compilers</text>
+<text x="388 400 412 424" y="18" fill="#e8e8e8">Help</text>
+<text x="28 40 52 64 76" y="66" fill="#33dd33">-DSC-</text>
+<text x="100 112 124 136 148 160" y="66" fill="#33dd33">BROWSE</text>
+<text x="208 220 232 244 256 268 280 292 304 316 328 340 352 364 376 388 400 412 424 436 448 460 472" y="66" fill="#40e0d0">HLQ.MLQ.VB01LOC.OUTFILE</text>
+<text x="652 664 676 688" y="66" fill="#33dd33">Line</text>
+<text x="712 724 736 748 760 772 784 796" y="66" fill="#33dd33">00000000</text>
+<text x="820 832 844" y="66" fill="#33dd33">Col</text>
+<text x="868 880 892" y="66" fill="#33dd33">001</text>
+<text x="916 928 940" y="66" fill="#33dd33">033</text>
+<text x="28 40 52 64 76 88 100" y="90" fill="#33dd33">Command</text>
+<text x="124 136 148 160" y="90" fill="#33dd33">===&gt;</text>
+<text x="760 772 784 796 808 820" y="90" fill="#33dd33">Scroll</text>
+<text x="844 856 868 880" y="90" fill="#33dd33">===&gt;</text>
+<text x="904 916 928" y="90" fill="#ffffff">CSR</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148 160 172 184 196 208 220 232 244 256 268 280 292 304 316 328 340 352 364 376 388 400" y="114" fill="#4f7dff">*********************************</text>
+<text x="424 436 448" y="114" fill="#40e0d0">Top</text>
+<text x="472 484" y="114" fill="#40e0d0">of</text>
+<text x="508 520 532 544" y="114" fill="#40e0d0">Data</text>
+<text x="568 580 592 604 616 628 640 652 664 676 688 700 712 724 736 748 760 772 784 796 808 820 832 844 856 868 880 892 904 916 928 940 952 964" y="114" fill="#4f7dff">**********************************</text>
+<text x="16 28 40 52 64 76 88" y="138" fill="#e0f4ff">P100001</text>
+<text x="112 124 136 148 160 172 184 196 208" y="138" fill="#e0f4ff">....*BOLT</text>
+<text x="232 244 256 268" y="138" fill="#e0f4ff">10MM</text>
+<text x="16 28 40 52 64 76 88" y="162" fill="#e0f4ff">P100002</text>
+<text x="112 124 136 148 160 172 184 196 208" y="162" fill="#e0f4ff">...&amp;.WASH</text>
+<text x="16 28 40 52 64 76 88" y="186" fill="#e0f4ff">P100003</text>
+<text x="112 124 136 148 160 172 184 196" y="186" fill="#e0f4ff">..rræHEX</text>
+<text x="220 232 244" y="186" fill="#e0f4ff">NUT</text>
+<text x="268 280 292 304 316 328 340 352 364" y="186" fill="#e0f4ff">STAINLESS</text>
+<text x="16 28 40 52 64 76 88" y="210" fill="#e0f4ff">P100004</text>
+<text x="112 124 136 148 160" y="210" fill="#e0f4ff">.....</text>
+<text x="16 28 40 52 64 76 88" y="234" fill="#e0f4ff">P100005</text>
+<text x="112 124 136 148 160 172 184 196 208 220 232" y="234" fill="#e0f4ff">....æCOTTER</text>
+<text x="256 268 280" y="234" fill="#e0f4ff">PIN</text>
+<text x="16 28 40 52 64 76 88 100 112 124 136 148 160 172 184 196 208 220 232 244 256 268 280 292 304 316 328 340 352 364 376 388" y="258" fill="#4f7dff">********************************</text>
+<text x="412 424 436 448 460 472" y="258" fill="#40e0d0">Bottom</text>
+<text x="496 508" y="258" fill="#40e0d0">of</text>
+<text x="532 544 556 568" y="258" fill="#40e0d0">Data</text>
+<text x="592 604 616 628 640 652 664 676 688 700 712 724 736 748 760 772 784 796 808 820 832 844 856 868 880 892 904 916 928 940 952 964" y="258" fill="#4f7dff">********************************</text>
+<rect x="52" y="21" width="12" height="2" fill="#e8e8e8"/>
+<rect x="124" y="21" width="12" height="2" fill="#e8e8e8"/>
+<rect x="256" y="21" width="12" height="2" fill="#e8e8e8"/>
+<rect x="388" y="21" width="12" height="2" fill="#e8e8e8"/>
+<rect x="184" y="93" width="564" height="2" fill="#40e0d0"/>
+<rect x="904" y="92" width="36" height="3" fill="#ffffff"/>
+</g>
+</g></svg>
