@@ -1,8 +1,8 @@
 # Record Layouts: DS 0CLn, ORG and REDEFINES
 
-Scope: laying out a record with a `DS 0CLn` label and named fields (`INREC` and `OUTAREA` in QSAMPROC), placing a field with `ORG` in a CSECT (`OUTREC` in DS02BILD) and giving the same bytes two names with `ORG` in a DSECT (`CUSTBAL` and `CUSTBALC` in DS01DSCT). `ORG` with no operand and records with variable-length fields are not used in any program and are not described. The DSECT mechanism is in the DSECT article. The programs were not assembled or run.
+Scope: laying out a record with a `DS 0CLn` label and named fields (`INREC` and `OUTAREA` in QSAMPROC), placing a field with `ORG` in a CSECT (`OUTREC` in DS02BILD) and giving the same bytes two names with `ORG` in a DSECT (`CUSTBAL` and `CUSTBALC` in DS01DSCT). A zero-length `DS 0CL1` that marks where a variable-length field starts, and a 4-byte RDW laid out as two halfwords (`VBINRECD` in VB01LOC, `VBOUTRECD` in VB01BILD), are also covered. `ORG` with no operand is not used in any program and is not described. The DSECT mechanism is in the DSECT article, and the RDW is in the variable-length records article. The programs were not assembled or run.
 
-Source programs: QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT.
+Source programs: QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT, VB01BILD, VB01LOC.
 
 ## Central Idea
 
@@ -55,6 +55,22 @@ CUSTBALC DS    CL5                     * +28, characters
 - `ORG` copies no data. The name chosen by the instruction decides how the bytes are read.
 - In real data another field, such as a type code, decides which view is valid.
 - X'000012345C' read as characters shows only `*` (X'5C') on the screen. The other bytes are not printable.
+
+## A Variable Part: VB01LOC
+
+```
+VBINRECD DSECT
+INRDWLL  DS    H                       * +0  Record length, RDW included
+INRDWFL  DS    H                       * +2  Reserved
+INCUSTNO DS    CL8                     * +4
+INAMOUNT DS    PL5                     * +12
+INNAME   DS    0CL1                    * +17 Variable part starts here
+```
+
+- The RDW is two halfwords: the length and the flags.
+- `INNAME DS 0CL1` reserves no bytes. It names displacement 17, and the length of the name comes from the RDW at run time, not from the layout.
+- The DSECT length is 17. The record length differs per record.
+- A `MVC` of `INNAME` with no length would move 1 byte, the label's length. The name needs an explicit or `EX` length.
 
 ## Rules
 

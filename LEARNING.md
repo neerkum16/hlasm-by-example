@@ -88,14 +88,18 @@ Each article starts with a Scope line that states what the programs exercise.
 | Packed decimal arithmetic | 05 | DT02ARTH | `docs/concepts/PACKED-ARITHMETIC.md` |
 | Data conversions and editing | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | `docs/concepts/DATA-CONVERSIONS.md` |
 | QSAM processing and control break | 07 | QSAMPROC | `docs/concepts/QSAM-CONTROL-BREAK.md` |
-| DSECTs, `USING` and `DROP` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH | `docs/concepts/DSECTS.md` |
-| Record layouts: `DS 0CLn`, `ORG` and REDEFINES | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT | `docs/concepts/RECORD-LAYOUTS.md` |
-| Packed data validity, initialisation and test files | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC | `docs/concepts/PACKED-VALIDITY.md` |
-| Internal subroutines with `BAL` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH | `docs/concepts/SUBROUTINES.md` |
+| DSECTs, `USING` and `DROP` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH, VB01BILD, VB01LOC | `docs/concepts/DSECTS.md` |
+| Record layouts: `DS 0CLn`, `ORG` and REDEFINES | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT, VB01BILD, VB01LOC | `docs/concepts/RECORD-LAYOUTS.md` |
+| Packed data validity, initialisation and test files | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC, VB01BILD | `docs/concepts/PACKED-VALIDITY.md` |
+| Internal subroutines with `BAL` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH, VB01LOC | `docs/concepts/SUBROUTINES.md` |
 | Match-merge of two sorted files | 03, 07 | BR09MTCH | `docs/concepts/MATCH-MERGE.md` |
-| Operand lengths: implied and explicit | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC | `docs/concepts/OPERAND-LENGTHS.md` |
+| Operand lengths: implied and explicit | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC | `docs/concepts/OPERAND-LENGTHS.md` |
+| Locate-mode I/O (GL and PL) | 07, 08 | VB01LOC, VB01BILD | `docs/concepts/LOCATE-MODE.md` |
+| Variable-length records and the RDW | 07, 08 | VB01BILD, VB01LOC | `docs/concepts/VARIABLE-RECORDS.md` |
+| `EX`: operand length at run time | 07 | VB01LOC | `docs/concepts/EXECUTE.md` |
+| Boundary cases and storage overruns | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | `docs/concepts/STORAGE-OVERRUNS.md` |
 
-Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used), `QSAM-CONTROL-BREAK.md` and `CONDITION-CODE.md` (new source programs), `DSECTS.md` and `OPERAND-LENGTHS.md` (VB01BILD and VB01LOC: DSECT over a locate-mode buffer, explicit-length `MVC` for a variable field, `EX` for a run-time length).
+Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC.
 
 ## Register Conventions
 
@@ -375,7 +379,7 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 
 ## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT, VB01BILD, VB01LOC)
 
-Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`, `docs/concepts/MATCH-MERGE.md`, `docs/concepts/SUBROUTINES.md`, `docs/concepts/PACKED-VALIDITY.md`.
+Concept articles: `docs/concepts/QSAM-CONTROL-BREAK.md`, `docs/concepts/LINKAGE.md`, `docs/concepts/MATCH-MERGE.md`, `docs/concepts/SUBROUTINES.md`, `docs/concepts/PACKED-VALIDITY.md`, `docs/concepts/LOCATE-MODE.md`, `docs/concepts/VARIABLE-RECORDS.md`, `docs/concepts/EXECUTE.md`.
 
 ### QSAMPROC: QSAM control break
 
@@ -464,7 +468,7 @@ Notes:
 
 ## 08 DSECTs
 
-Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, `docs/concepts/OPERAND-LENGTHS.md`.
+Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, `docs/concepts/OPERAND-LENGTHS.md`, `docs/concepts/LOCATE-MODE.md`, `docs/concepts/VARIABLE-RECORDS.md`, `docs/concepts/EXECUTE.md`, `docs/concepts/STORAGE-OVERRUNS.md`.
 
 ### QSAMPROC: DCB open check
 

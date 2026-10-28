@@ -74,12 +74,16 @@ Each article explains one idea that runs across several programs. It starts with
 | `PACKED-ARITHMETIC.md` | 05 | DT02ARTH | Operand length rules for `ZAP`, `AP`, `MP`, `DP`, `SRP` |
 | `DATA-CONVERSIONS.md` | 02, 05, 06 | REGCALC, DT02ARTH, DT03CONV | Conversion map and `ED` pattern rules |
 | `QSAM-CONTROL-BREAK.md` | 07 | QSAMPROC | `GET` and `PUT` in move mode, open and close order, priming read, group reset |
-| `DSECTS.md` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH | A DSECT is a map with no storage; `LA`, `USING` and `DROP` join it to real storage; two maps at once; `DCBD`; placement before `END` |
-| `RECORD-LAYOUTS.md` | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT | `DS 0CLn` records, `ORG` to place a field, `ORG` in a DSECT as REDEFINES, closing `ORG` |
-| `PACKED-VALIDITY.md` | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC | A valid sign nibble is needed before `AP`; initialise with `ZAP`; S0C7; building a packed test file; `HEX ON` in Browse |
-| `SUBROUTINES.md` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH | `BAL` and `BR`, one return register per call level, parameter block in R1, `EODAD` routine as a return path |
+| `DSECTS.md` | 08 | DS01DSCT, DS02DSCT, QSAMPROC, BR09MTCH, VB01BILD, VB01LOC | A DSECT is a map with no storage; `LA`, `USING` and `DROP` join it to real storage; two maps at once; DSECT over a locate-mode buffer; `DCBD`; placement before `END` |
+| `RECORD-LAYOUTS.md` | 08 | QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT, VB01BILD, VB01LOC | `DS 0CLn` records, `ORG` to place a field, `ORG` in a DSECT as REDEFINES, closing `ORG`, `DS 0CL1` marking a variable part |
+| `PACKED-VALIDITY.md` | 05, 07 | DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC, VB01BILD | A valid sign nibble is needed before `AP`; initialise with `ZAP`; S0C7; building a packed test file; `HEX ON` in Browse |
+| `SUBROUTINES.md` | 04 (partial) | DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH, VB01LOC | `BAL` and `BR`, one return register per call level, parameter block in R1, `EODAD` routine as a return path |
 | `MATCH-MERGE.md` | 03, 07 | BR09MTCH | Two sorted files, one current record each, `CLC` three-way decision, drain after end of file, `HIVALUE` |
-| `OPERAND-LENGTHS.md` | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC | Implied and explicit operand lengths, literal length, fixed `CL50` messages, truncation by `UNPK` zones |
+| `OPERAND-LENGTHS.md` | 03, 07, 08 | DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC | Implied and explicit operand lengths, literal length, fixed `CL50` messages, truncation by `UNPK` zones, run-time length with `EX` |
+| `LOCATE-MODE.md` | 07, 08 | VB01LOC, VB01BILD | `GET` and `PUT` in locate mode, buffer address in R1, `LR` at once, DSECT over the buffer, record written at the next `PUT` or `CLOSE` |
+| `VARIABLE-RECORDS.md` | 07, 08 | VB01BILD, VB01LOC | `RECFM=VB`, the 4-byte RDW, `LRECL` as the longest record, length arithmetic (+17, -17), `DS 0CL1` variable part, Browse view |
+| `EXECUTE.md` | 07 | VB01LOC | `EX` with `MVC`, length minus 1 with `BCTR`, low byte of the register, the empty-name failure and an untested fix |
+| `STORAGE-OVERRUNS.md` | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | Over-reads and overruns seen in runs, what an overrun overwrites, one fault hiding another, boundary tests |
 
 Add a row when an article is written.
 

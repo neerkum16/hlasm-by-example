@@ -1,8 +1,8 @@
 # Operand Lengths: Implied and Explicit
 
-Scope: where the length of a storage-to-storage operand comes from (`MVC`, `CLC`, `UNPK`, `ZAP`, `AP`) as seen in DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH and QSAMPROC: implied from the field, coded explicitly, taken from a literal, or absent for a register operand. Instructions not used in these programs are not described. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: where the length of a storage-to-storage operand comes from (`MVC`, `CLC`, `UNPK`, `ZAP`, `AP`) as seen in DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH and QSAMPROC: implied from the field, coded explicitly, taken from a literal, or absent for a register operand. A length decided at run time with `EX` (VB01LOC) is summarised here and described in the EX article. Instructions not used in these programs are not described. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC.
+Source programs: DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC.
 
 ## Central Idea
 
@@ -18,6 +18,7 @@ A storage-to-storage instruction needs a length. The assembler takes it from the
 | Name with offset | Coded length is required | `MVC PRTLINE+10(20),PARTDESC` |
 | Register as base | No attribute; the length must be coded | `MVC PRTLINE(50),0(1)` |
 | Literal | Length of the literal text | `=C'CUST NO: '` is 9, `=CL8'P100001'` is 8, `=P'12345'` is 3 |
+| `EX` register | Low byte of the register, as length - 1 | `EX 5,MVCSHOWN` with the target coded `MVC PRTLINE+20(1),INNAME` |
 
 ## The Literal Trap in DS01DSCT
 
@@ -28,6 +29,13 @@ A storage-to-storage instruction needs a length. The assembler takes it from the
 - Fixes: `=CL10'CUST NO:'` (10 bytes), or copy 9 bytes.
 - The value fields start at column 11 and are not affected.
 - DS02BILD avoids the trap by making the literal length equal the move length: `MVC OUTREC(8),=CL8'P100001'` and `MVC OUTREC+10(20),=CL20'BOLT 10MM'`.
+
+## Length Known Only at Run Time
+
+- VB01BILD codes each name length in the instruction, because it is known when assembling: `MVC OUTNAME(12),=CL12'BOLT 10MM'`. The literal length equals the move length.
+- VB01LOC gets the name length from the RDW at run time (`LH 5,INRDWLL`, `S 5,=F'17'`). An `MVC` cannot take a register length, so it uses `EX 5,MVCSHOWN` with the length minus 1 in R5.
+- The coded length of the target `MVC` is 1. The register supplies the real length, 1 to 256.
+- A zero length gives -1 after `BCTR`, and the move is 256 bytes. This failed in the VB01LOC run on record 4.
 
 ## Fixed Lengths Agreed by Convention
 

@@ -1,6 +1,6 @@
 # QSAM Processing and Control Break
 
-Scope: sequential files in move mode (`GET` and `PUT` with `MACRF=GM` and `PM`), the EODAD and SYNAD exits, open and close order, and control-break logic on a sorted file, as in QSAMPROC. Locate mode and other access methods are not used in any program and are not described. The outline below is a layout from the notes in LEARNING.md, not a copy of the program. The programs were not assembled or run.
+Scope: sequential files in move mode (`GET` and `PUT` with `MACRF=GM` and `PM`), the EODAD and SYNAD exits, open and close order, and control-break logic on a sorted file, as in QSAMPROC. Locate mode (VB01LOC, VB01BILD) is in the locate-mode article. Other access methods are not used in any program and are not described. The outline below is a layout from the notes in LEARNING.md, not a copy of the program. The programs were not assembled or run.
 
 Source programs: QSAMPROC (SYSOUT output also in every other program).
 

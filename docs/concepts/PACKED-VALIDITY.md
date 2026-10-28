@@ -1,8 +1,8 @@
 # Packed Data Validity, Initialisation and Test Files
 
-Scope: why a packed field must hold a valid sign nibble before `AP` uses it, which instructions check and which do not, initialising work fields with `ZAP`, building a file with packed data from a program, and reading packed bytes in ISPF Browse, as used in DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH and QSAMPROC. Packed fields in other kinds of data sets are not used in any program and are not described. Packed arithmetic rules are in the packed arithmetic article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: why a packed field must hold a valid sign nibble before `AP` uses it, which instructions check and which do not, initialising work fields with `ZAP`, building a file with packed data from a program, and reading packed bytes in ISPF Browse, as used in DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC and VB01BILD (a variable-length file with a packed field). Packed fields in other kinds of data sets are not used in any program and are not described. Packed arithmetic rules are in the packed arithmetic article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC.
+Source programs: DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC, VB01BILD.
 
 ## Central Idea
 
@@ -54,6 +54,16 @@ A file with packed fields cannot be typed in an editor, so DS02BILD writes it.
 - A file edited and saved as text loses the packed bytes. `SHOWREC` would still print digits and `AP` would then abend.
 - The JCL uses `NEW,CATLG,DELETE`. If the data set exists, allocation fails, so delete it before a rerun.
 
+## Building a Test File: VB01BILD
+
+VB01BILD builds a `RECFM=VB` file in locate mode. It has two things that cannot be typed: the packed amount and the binary RDW.
+
+- The amount is set with `ZAP OUTAMOUNT,=P'12345'` into a `PL5` field in the buffer. `ZAP` gives valid digits and the sign C. `MVC` of packed data would not set the sign.
+- The RDW is set with `MVC OUTRDWLL,=H'29'` and `XC OUTRDWFL,OUTRDWFL`. It is binary data, so a text editor cannot produce it either.
+- The five amounts are `P'12345'`, `P'500'`, `P'99999'`, `P'0'` and `P'15099'`, the same values as DS02BILD.
+- Per VB01BILD.md, the reader's `AP` and `UNPK` need the valid sign.
+- `PUT` in locate mode does not clear the buffer, so every byte inside the record length is set by the program. The amount's five bytes are all set by `ZAP`.
+
 ## Reading Packed Bytes
 
 | Bytes | Character view in Browse |
@@ -66,6 +76,7 @@ A file with packed fields cannot be typed in an editor, so DS02BILD writes it.
 
 - Browse in character view shows `*` for X'5C', `&` for X'50', `r` for X'99' and `æ` for X'9C'. Bytes with no printable character show as `.`.
 - Use `HEX ON` to see the real bytes.
+- VB01BILD's output shows the same characters for the same amounts. Browse hides the RDW, so the longest line is 33 columns for a 37-byte record.
 - A packed field has no decimal point. The reader decides the scale, so X'000012345C' is 12345 unless 2 decimals are assumed.
 - DS01DSCT shows the same bytes as digits (`UNPK` and `OI`) and as characters (`CUSTBALC`). The character view is only a demonstration; packed bytes are not meant to be read as characters.
 

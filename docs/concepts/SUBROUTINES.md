@@ -1,8 +1,8 @@
 # Internal Subroutines with BAL
 
-Scope: internal routines in the same CSECT called with `BAL reg,label` and left with `BR reg`, one return register per calling level, parameters in registers and in a parameter block addressed by R1, and an `EODAD` routine that returns like a routine, as used in DT01TYPE, DT02ARTH, QSAMPROC, BR09MTCH and DS02DSCT. Calls to other programs (`CALL`, `LINK`), routines with their own save area, `BALR`, `BAS` and recursion are not used in any program and are not described. Entry and exit linkage of the program itself is in the linkage article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: internal routines in the same CSECT called with `BAL reg,label` and left with `BR reg`, one return register per calling level, parameters in registers and in a parameter block addressed by R1, and an `EODAD` routine that returns like a routine, as used in DT01TYPE, DT02ARTH, QSAMPROC, BR09MTCH, DS02DSCT and VB01LOC. Calls to other programs (`CALL`, `LINK`), routines with their own save area, `BALR`, `BAS` and recursion are not used in any program and are not described. Entry and exit linkage of the program itself is in the linkage article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH.
+Source programs: DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH, VB01LOC.
 
 ## Central Idea
 
@@ -36,7 +36,7 @@ DS02DSCT has two levels:
 
 QSAMPROC assigns registers by level: R10 for level 1, R9 for level 2, R8 for level 3, and R7 for `PRTMSG`, which is called from any level and so has its own register.
 
-A routine that calls no other routine can share the register of its own level. BR09MTCH calls only leaf routines, all with `BAL 10` (`READ1`, `READ2`, `OPENCHK`, `PRTCNTS`), so R10 is never overwritten.
+A routine that calls no other routine can share the register of its own level. BR09MTCH calls only leaf routines, all with `BAL 10` (`READ1`, `READ2`, `OPENCHK`, `PRTCNTS`), so R10 is never overwritten. VB01LOC does the same: the mainline calls `OPENCHK`, `PRTMSG`, `READREC`, `SHOWREC` and `BUILDOUT` with `BAL 10`, and each ends with `BR 10`.
 
 ## Routines That Cannot Call Each Other
 
@@ -74,7 +74,9 @@ A routine that calls no other routine can share the register of its own level. B
 
 - The `GET` is inside a routine (`READREC`, `READ1`, `READ2`), so the `EOFRTN` code runs in place of the rest of that routine and must end with `BR` on the same return register: `BR 10`.
 - This works because QSAM preserves R2 to R13, so R10 still holds the address set by the `BAL` that called the read routine.
-- The routine sets a switch (`EOFSW`, `EOF1`, `EOF2`) and, in BR09MTCH, moves `HIVALUE` into the key. The line after the `GET`, such as `AP CNT1,=P'1'`, is skipped, so the count is not incremented for end of file.
+- In VB01LOC the `GET` is in `READREC` and `EOFRTN` ends with `BR 10`. With locate mode the same holds, but R3 then keeps the address of the last record read, because the `LR 3,1` after the `GET` is skipped.
+
+The routine sets a switch (`EOFSW`, `EOF1`, `EOF2`) and, in BR09MTCH, moves `HIVALUE` into the key. The line after the `GET`, such as `AP CNT1,=P'1'`, is skipped, so the count is not incremented for end of file.
 
 ## Rules
 
