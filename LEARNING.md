@@ -36,6 +36,8 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 07 File I/O, 08 DSECTs | DS02DSCT | `src/DS02DSCT.asm` | `docs/DS02DSCT.md` | `output/DS02DSCT_SYSOUT.svg` |
 | 07 File I/O, 08 DSECTs | VB01BILD | `src/VB01BILD.asm` | `docs/VB01BILD.md` | `output/VB01BILD_SYSOUT.svg` (ISPF Browse of the output file, not SDSF) |
 | 07 File I/O, 08 DSECTs | VB01LOC | `src/VB01LOC.asm` | `docs/VB01LOC.md` | `output/VB01LOC_SYSOUT.svg` |
+| 04 Subroutines | SB01CALL | `src/SB01CALL.asm` | `docs/SB01CALL.md` | `output/SB01CALL_SYSOUT.svg` |
+| 04 Subroutines | SB02SUBR | `src/SB02SUBR.asm` | `docs/SB02SUBR.md` | none: result is in `output/SB01CALL_SYSOUT.svg` |
 
 ## Test Data
 
@@ -55,9 +57,11 @@ BR09MTCH has no files in `data/` yet: its input and output files were not suppli
 
 DS01DSCT has no files in `data/`: its two records are `DC` constants in the source, and it runs with the generic `jcl/ASMCLRUN.jcl`.
 
+SB01CALL and SB02SUBR have no files in `data/`: the values are constants in the source.
+
 ## Run JCL
 
-Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its own files has its own member, `jcl/<PROGRAM>.jcl`. Each has three steps: `ASMA90` (assemble), `HEWL` (link) and the program step, with `COND` on the earlier steps. Only `PGMNAME` and the program step DDs differ.
+Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its own files has its own member, `jcl/<PROGRAM>.jcl`. Each has three steps: `ASMA90` (assemble), `HEWL` (link) and the program step, with `COND` on the earlier steps. Only `PGMNAME` and the program step DDs differ. The exception is `jcl/SB01CALL.jcl`, which has four steps because two programs are assembled and link-edited into one load module.
 
 | Program | JCL | Program step DDs |
 |---|---|---|
@@ -67,6 +71,7 @@ Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its ow
 | DS02DSCT | `jcl/DS02DSCT.jcl` | `PARTFILE` `DISP=SHR` (the file DS02BILD created); `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Output is on `SYSPRINT` |
 | VB01BILD | `jcl/VB01BILD.jcl` | `OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Dataset names use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM` |
 | VB01LOC | `jcl/VB01LOC.jcl` | `INFILE` is `HLQ.MLQ.VB01BILD.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.VB01LOC.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. The screenshot of the submitted job showed an ACF2 comment line (`$ACFJ219 ACF2 ACTIVE`) added by the system; it is not in the member and not in the file. Masked as for VB01BILD (`HLQ.MLQ`, job name `MLQM`) |
+| SB01CALL, SB02SUBR | `jcl/SB01CALL.jcl` | `STEP01` assembles SB01CALL (`&&OBJ1`), `STEP02` assembles SB02SUBR (`&&OBJ2`), `STEP03` link-edits both (`SYSLIN` concatenation) into `LOAD(SB01CALL)`, `STEP04` runs `SB01CALL`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. No `PGMNAME` symbol, member names are coded in each step. `SET SOURCE` and `SET LOAD` use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM`. Both `COND` lists test the earlier steps for return code 8 or more. No dataset is created or cataloged, so it can be rerun as is |
 
 `AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD `HLQ.MLQ.VB01BILD.OUTFILE` of VB01BILD and `HLQ.MLQ.VB01LOC.OUTFILE` of VB01LOC.
 
@@ -99,7 +104,7 @@ Each article starts with a Scope line that states what the programs exercise.
 | `EX`: operand length at run time | 07 | VB01LOC | `docs/concepts/EXECUTE.md` |
 | Boundary cases and storage overruns | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | `docs/concepts/STORAGE-OVERRUNS.md` |
 
-Topic 04 stays Planned: `SUBROUTINES.md` covers the internal `BAL` routines used so far, and no program yet uses `CALL` or `LINK`. Existing articles still to update for the newer programs: `LINKAGE.md` (parameter list in R1 is now used) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC.
+Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC.
 
 ## Register Conventions
 
@@ -296,9 +301,29 @@ Also listed under 07 File I/O and 08 DSECTs. The file handling is in the 07 sect
 
 DS02DSCT already uses two call levels and a parameter list in R1; see its notes under 08 DSECTs. Level 1 calls use `BAL 10` / `BR 10`, the call from inside a level 1 routine uses `BAL 9` / `BR 9`.
 
-Concept article: `docs/concepts/SUBROUTINES.md`. Topic 04 has no dedicated program yet and stays Planned.
+Concept article: `docs/concepts/SUBROUTINES.md` (internal `BAL` routines; not yet updated for SB01CALL and SB02SUBR).
 
-Planned.
+### SB01CALL and SB02SUBR: a separate subprogram with standard linkage
+
+Source: `src/SB01CALL.asm` (main) and `src/SB02SUBR.asm` (called). Run with `jcl/SB01CALL.jcl`. Not assembled or run by Claude; the results are from the owner's run (job J0065847).
+
+| Register | On entry to the called program |
+|---|---|
+| R1 | Parameter list: fullword addresses, high-order bit on the last one |
+| R13 | Save area provided by the caller |
+| R14 | Return address |
+| R15 | Entry address; on return, the return value |
+
+- A call needs R1 (parameter list), R15 (entry address) and a branch that sets R14: `LA 1,PARMLST1`, `L 15,=V(SB02SUBR)`, `BALR 14,15`. The `CALL` macro generates the same kind of sequence from `CALL SB02SUBR,(TOTAL,AMOUNT)`.
+- `=V(name)` is an external reference, resolved by the linkage editor. Both object decks must be in `SYSLIN` (`&&OBJ1` then `&&OBJ2`); the load module is named after the main program.
+- `LINK EP=name,PARAM=(...)` is a supervisor call that loads the program at run time. It is only in a comment in SB01CALL and has not been run.
+- The parameter list: `DC A(TOTAL)` and `DC X'80',AL3(AMOUNT)`. `AL3` is a 3-byte address; `X'80'` before it sets bit 0 of the word. The `CALL` macro sets that bit only with the `VL` operand, which is not coded here, so the comments in SB01CALL are wrong on that point. SB02SUBR clears the bit with `N 3,=X'7FFFFFFF'` and never tests it.
+- The called program saves the caller's registers in the caller's save area (`STM 14,12,12(13)`), chains a private save area both ways (`ST 13,SUBSAVE+4`, `LA 14,SUBSAVE`, `ST 14,8(,13)`, `LR 13,14`) and restores through the backward chain (`L 13,SUBSAVE+4`, `LM 14,12,12(13)`).
+- `LM 14,12,12(13)` also reloads R15 and R12. A return code must be in R15 after the `LM`, and anything addressed through R12 after the `LM` is addressed from the caller's base.
+- `SHOWRC` saves R15 with `ST 15,SAVERC` before `PUT`, because `PUT` changes R15.
+- `SB02SUBR` keeps `SUBSAVE` and `RETCODE` in the CSECT, so it is not reentrant.
+- Result of the run: totals 150, 650 and 99350 (the third is -99350 shown without its sign, because `OI ZONE+7,X'F0'` removes it), and `RETURN CODE` 33280 (X'00008200') on every line. Expected 0, 0, 4. Cause, inferred from the source and the SYSOUT: `IC 15,RETCODE` after the `LM` is addressed through R12, which `LM` has just set to SB01CALL's base, so the byte read is not `RETCODE`; `IC` changes only the low byte, so the upper three bytes are the entry address restored by `LM`. Untested fix: set the return code before the `LM` (`SR 15,15`, `IC 15,RETCODE`, `L 13,SUBSAVE+4`, `ST 15,16(,13)`, `LM 14,12,12(13)`).
+- Source lines 1-29 of SB01CALL were not supplied; the source file holds a placeholder block for them.
 
 ## 05 Packed Decimal (DT02ARTH, DT03CONV)
 
@@ -558,9 +583,15 @@ Planned.
 | 2026-10-27 | VB01LOC | Line 5 of the output shows `P100005` and its data after `P100004`, and the end message is blank | Record 4 has an empty name: R5 = -1 after `BCTR`, `EX` uses X'FF', and the `MVC` moves 256 bytes into an 80-byte `PRTLINE` | Not fixed in the source. Test the length before `EX` and skip the move when it is zero |
 | 2026-10-27 | VB01LOC | Comments say a length of 0 in the register is harmless | An empty name gives -1, not 0 | Comment is incomplete, code unchanged |
 | 2026-10-27 | VB01LOC | JCL screenshot has a line `//* $ACFJ219 ACF2 ACTIVE TDBK013` | The system adds it to the submitted job | Not part of the member; left out of `jcl/VB01LOC.jcl` |
+| 2026-10-30 | SB01CALL | S0C4 after the heading line, on the first call | The hand-built call had `L 15,=V(SB02SUBR)` and `BALR 14,15` but no `LA 1,PARMLST1`; SB02SUBR's `L 2,0(,1)` used the R1 left over from `OPEN` and `PUT` | Add `LA 1,PARMLST1` before `L 15,=V(SB02SUBR)` (applied by the owner) |
+| 2026-10-30 | SB02SUBR | `RETURN CODE` is 33280 on every line; the third call should give 4 | `IC 15,RETCODE` runs after `LM 14,12,12(13)`. `LM` sets R12 to SB01CALL's base, so `RETCODE` is read from the wrong place; `IC` replaces only the low byte of R15, so the other three bytes are the entry address restored by `LM` (inferred, not run by Claude) | Not fixed in the source. Untested: `SR 15,15`, `IC 15,RETCODE`, `L 13,SUBSAVE+4`, `ST 15,16(,13)`, `LM 14,12,12(13)` |
+| 2026-10-30 | SB01CALL | Comments say the `CALL` macro sets the high bit of the last address | `CALL` sets it only with the `VL` operand; none is coded. SB02SUBR does not test the bit, so the run is the same | Comment is wrong, code unchanged |
+| 2026-10-30 | SB01CALL | `TOTAL NOW` shows 00099350 for -99350 | `OI ZONE+7,X'F0'` forces the last zone to F, which drops the sign | Not an error in the arithmetic; the display has no sign. Use a sign character as in `PKDISP` of DT02ARTH |
+| 2026-10-30 | SB01CALL | Comment on call 2 says the amount is large enough to push the total over, and that the check is not triggered | 150 + 500 = 650 is positive; the negative check is exercised by call 3 | Comment is muddled, code unchanged |
 
 ## Open Questions
 
 - QSAMPROC: test records for rules R2 and R3, `REGULAR USER` and `READ ONLY USER`, a group whose records carry an ACF2 id, and an empty input file.
 - BR09MTCH: the contents of `INFILE1`, `INFILE2`, `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM` for the run with 5 / 5 records read, to be added to `data/`. Cases still to test: an empty file 1, an empty file 2, both empty, a repeated key in one file, and an open failure (missing DD).
 - VB01LOC: the length check before `EX` (empty name), the contents of `HLQ.MLQ.VB01LOC.OUTFILE` after the run, and whether the overrun changed anything else in storage. The end message is missing in the SYSOUT; the bytes that replaced it are not shown.
+- SB01CALL and SB02SUBR: rerun after the return code fix and check that the three lines show 0, 0 and 4; run the `LINK EP=SB02SUBR,PARAM=(TOTAL,AMOUNT)` variant (SB02SUBR would then need to be a member of `LOAD`); list the `CALL` expansion with `PRINT GEN`; code `VL` on a `CALL` and check that the high bit is set; replace the placeholder for SB01CALL lines 1-29.
