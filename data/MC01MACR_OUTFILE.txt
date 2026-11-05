@@ -1,0 +1,4 @@
+TABLE SEARCH RESULTS                                                            
+CHARLIE   FOUND, VALUE IS                         00000300                      
+ALPHA     FOUND, VALUE IS                         00000100                      
+ECHO      NOT FOUND IN TABLE                                                    

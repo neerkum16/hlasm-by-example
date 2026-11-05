@@ -38,6 +38,8 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 07 File I/O, 08 DSECTs | VB01LOC | `src/VB01LOC.asm` | `docs/VB01LOC.md` | `output/VB01LOC_SYSOUT.svg` |
 | 04 Subroutines | SB01CALL | `src/SB01CALL.asm` | `docs/SB01CALL.md` | `output/SB01CALL_SYSOUT.svg` |
 | 04 Subroutines | SB02SUBR | `src/SB02SUBR.asm` | `docs/SB02SUBR.md` | none: result is in `output/SB01CALL_SYSOUT.svg` |
+| 05 Packed decimal, 06 Editing | ED01EDMK | `src/ED01EDMK.asm` | `docs/ED01EDMK.md` | `output/ED01EDMK_SYSOUT.svg` |
+| 10 Macros, 07 File I/O | MC01MACR | `src/MC01MACR.asm` | `docs/MC01MACR.md` | `output/MC01MACR_SYSOUT.svg` |
 
 ## Test Data
 
@@ -52,12 +54,16 @@ Programs that read or write files keep their test files in `data/`, named `<PROG
 | VB01BILD | OUTFILE | none | 5 variable, 17 to 37 bytes with RDW | Created by the program, not stored in `data/`: each record starts with a binary RDW and has a packed amount, so a text file cannot hold it. Contents are in `docs/VB01BILD.md` |
 | VB01LOC | INFILE | none | 5 variable, 17 to 37 bytes with RDW | Input: the file VB01BILD creates. See the VB01BILD row |
 | VB01LOC | OUTFILE | none | 5 variable, written by the program | Created by the program, not stored in `data/`. Not browsed, so its contents are not recorded |
+| MC01MACR | INFILE | `data/MC01MACR_INFILE.txt` | 4 x 80 | Input: the output of BR08SRCH (`TABLE SEARCH RESULTS`, CHARLIE 00000300, ALPHA 00000100, ECHO not found). Value in column 51 |
+| MC01MACR | OUTFILE | `data/MC01MACR_OUTFILE.txt` | 4 x 80 | Output of the run: a copy of the input, same four lines |
 
 BR09MTCH has no files in `data/` yet: its input and output files were not supplied (see Open Questions).
 
 DS01DSCT has no files in `data/`: its two records are `DC` constants in the source, and it runs with the generic `jcl/ASMCLRUN.jcl`.
 
 SB01CALL and SB02SUBR have no files in `data/`: the values are constants in the source.
+
+ED01EDMK has no files in `data/`: its amounts are `DC` constants in the source, and it runs with the generic `jcl/ASMCLRUN.jcl`.
 
 ## Run JCL
 
@@ -72,8 +78,9 @@ Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its ow
 | VB01BILD | `jcl/VB01BILD.jcl` | `OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. Dataset names use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM` |
 | VB01LOC | `jcl/VB01LOC.jcl` | `INFILE` is `HLQ.MLQ.VB01BILD.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.VB01LOC.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. The screenshot of the submitted job showed an ACF2 comment line (`$ACFJ219 ACF2 ACTIVE`) added by the system; it is not in the member and not in the file. Masked as for VB01BILD (`HLQ.MLQ`, job name `MLQM`) |
 | SB01CALL, SB02SUBR | `jcl/SB01CALL.jcl` | `STEP01` assembles SB01CALL (`&&OBJ1`), `STEP02` assembles SB02SUBR (`&&OBJ2`), `STEP03` link-edits both (`SYSLIN` concatenation) into `LOAD(SB01CALL)`, `STEP04` runs `SB01CALL`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. No `PGMNAME` symbol, member names are coded in each step. `SET SOURCE` and `SET LOAD` use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM`. Both `COND` lists test the earlier steps for return code 8 or more. No dataset is created or cataloged, so it can be rerun as is |
+| MC01MACR | `jcl/MC01MACR.jcl` | `INFILE` is `HLQ.MLQ.BR08SRCH.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.MC01MACR.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(1,2),RLSE)`, `RECFM=FB`, `LRECL=80`, `BLKSIZE=0`; `STEPLIB`, `SYSOUT`, `SYSPRINT`, `SYSUDUMP`. Masked `HLQ.MLQ`; job name `MLQA`. The `SET` banner reads `SET PRORGAM NAME, SOURCE & LOAD LIBRARY`, kept as in the screenshot. In step 3 each DD has one blank after `DD` (operands in column 15), unlike steps 1 and 2 |
 
-`AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD `HLQ.MLQ.VB01BILD.OUTFILE` of VB01BILD and `HLQ.MLQ.VB01LOC.OUTFILE` of VB01LOC.
+`AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD `HLQ.MLQ.VB01BILD.OUTFILE` of VB01BILD and `HLQ.MLQ.VB01LOC.OUTFILE` of VB01LOC. `HLQ.MLQ.MC01MACR.OUTFILE` of MC01MACR is cataloged the same way.
 
 `jcl/DS02DSCT.jcl` has the same three steps as `jcl/DS02BILD.jcl`; only `PGMNAME` and the `PARTFILE` DD differ (`DISP=SHR`, nothing is created). Run DS02BILD first.
 
@@ -104,7 +111,7 @@ Each article starts with a Scope line that states what the programs exercise.
 | `EX`: operand length at run time | 07 | VB01LOC | `docs/concepts/EXECUTE.md` |
 | Boundary cases and storage overruns | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | `docs/concepts/STORAGE-OVERRUNS.md` |
 
-Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC.
+Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC. `DATA-CONVERSIONS.md` still has to be updated for `EDMK` (ED01EDMK). Topic 10 has its first program, MC01MACR; a `docs/concepts/MACROS.md` article (macro definition, parameters, `&SYSNDX`, `AIF`, sequence symbols, macro versus subroutine) is still to be written.
 
 ## Register Conventions
 
@@ -400,7 +407,19 @@ Concept article: `docs/concepts/DATA-CONVERSIONS.md`.
 - `EDMASK2` X'4020202020214B202060': 123.45 style. 12345 gives `   123.45 `. The value 7 gives `      .07 `, not `0.07`. The digit selected by X'21' (the one before the period) is zero and is still replaced by the fill; zero suppression is off only for the digits after it.
 - To print a leading `0.07` the significance starter must be one digit position earlier in the pattern.
 - The packed source must be a valid packed field; `ED` reads the digits two per byte.
-- `EDMK` is not covered yet.
+### ED01EDMK: EDMK and a floating currency sign
+
+- `EDMK` is `ED` plus one effect: the first time a digit selector becomes significant, R1 receives the address of that pattern byte. Before that R1 is not touched.
+- Floating `$`: `EDMK pattern,source`, `BCTR 1,0` (R1 minus 1, the byte before the first digit), `MVI 0(1),C'$'`. `BCTR` with register 0 as second operand never branches.
+- `ED` and `EDMK` have one length, that of operand 1. The source is consumed digit by digit; `EDMK PATTERN,0(7)` takes length 11 from `PATTERN`.
+- The pattern is overwritten, so copy the master to a work area before every edit (`MVC PATTERN,PATMAST`). The work area decides how many bytes are copied: a master longer than the work area loses its last bytes.
+- A pattern for a `PL5` (9 digits): fill byte, nine selectors, last one `X'21'`, so an amount of 0 still prints one digit and sets R1. In ED01EDMK `PATMAST` is read as 12 bytes (fill, ten `X'20'`, `X'21'`) and `PATTERN` is `CL11`; the `X'21'` is not copied, no digit becomes significant for 0, R1 is not set, and `BCTR`/`MVI` store a `$` one byte before the old R1 value, outside the output line.
+- Digits d1 to d9 go to pattern bytes 2 to 10. First significant digit and `$` position, loop 1: 7 gives `$` at byte 9, 450 at byte 7, 1234567 at byte 3.
+- A comma is a message insertion byte: it prints when a digit to its left was significant and is replaced by the fill when not. In `PATMAST2` it follows six selectors, so 999 loses it and the `$` takes its slot (`       $999`).
+- One comma three digits from the right gives `$1234,567` for 1,234,567, not `$1,234,567`.
+- `MVC OUTMSG(12),PATTERN` copies 12 bytes from an 11-byte field; byte 12 is the first byte of `AMTTAB` (`X'00'`, shown as a blank). Loop 2 copies 11.
+- `UNPK ZONESHOW,0(5,7)` with `ZONESHOW` `CL10` gives 10 digit characters for a `PL5`; `OI ZONESHOW+9,X'F0'` fixes the last one.
+- Result: `$7`, `$450`, `$1234567` for loop 1 (the amount 0 prints nothing), `$1234,567`, `$999`, `$1000,000` for loop 2.
 
 ## 07 File I/O (QSAMPROC, BR09MTCH, DS02BILD, DS02DSCT, VB01BILD, VB01LOC)
 
@@ -561,7 +580,75 @@ Planned. The serial search and indexed stepping used so far are in `docs/concept
 
 ## 10 Macros
 
-Planned.
+Concept article: none yet (`docs/concepts/MACROS.md` is planned).
+
+### MC01MACR: source macros, &SYSNDX and AIF
+
+Source: `src/MC01MACR.asm`. Run with `jcl/MC01MACR.jcl` (job J0095373). Not assembled or run by Claude; the output is from the owner's run, and the error history below is from the owner's debugging journal (`MC01MACR.md` on the owner's machine).
+
+| Item | Use |
+|---|---|
+| `MACRO` ... `MEND` | Define a macro in the source, before the first `CSECT` |
+| Prototype | `&LAB CHKOPEN &DCB,&FAILMSG`: label parameter, then positional parameters |
+| `&DEST=SYSOUT` | Keyword parameter with a default; order does not matter |
+| `&SYSNDX` | 4-digit number, different for every macro instruction in the assembly; used to build `OK&SYSNDX`, a label that is emitted into the object code |
+| `AIF (cond).SEQ` | Assembly-time test; skips source up to the sequence symbol |
+| `.SEQ ANOP` | Target for `AIF` and `AGO` |
+| `.*` comment | Macro comment, not copied to the expansion |
+| `PRINT NOGEN` | Hides the generated lines in the listing |
+
+Final `CHKOPEN` body:
+
+```
+&LAB     DS    0H
+         LA    2,&DCB
+         USING IHADCB,2
+         TM    DCBOFLGS,DCBOFOPN
+         DROP  2
+         AIF   ('&FAILMSG' EQ '').NOMSG
+         BO    OK&SYSNDX
+         PRTMSG &FAILMSG,DEST=SYSPRINT
+         ABEND 999,DUMP
+OK&SYSNDX DS   0H
+.NOMSG   ANOP
+```
+
+Concepts:
+
+- A macro is a template the assembler expands in line. The program grows with each use; nothing is called at run time and no return register is used.
+- `&SYSNDX` is for ordinary generated symbols (labels that reach the object code). A fixed label inside a macro is defined again by every expansion and fails from the second use.
+- A sequence symbol (`.name`) only steers conditional assembly and is never emitted into the object code, so each expansion's scan is private and a plain fixed name such as `.NOMSG` cannot collide.
+- `AIF` and `AGO` are decided at assembly time, from the text of the operands. A run-time question ("did the open fail?") needs a machine branch (`BO`, `BNO`, `BE`). An omitted `&FAILMSG` is an empty string, which `AIF` can test.
+- `CHKOPEN` keeps the `TM` result in the condition code: `DROP` and `AIF` do not change it, so `BO` still tests the `TM`.
+- `CHKOPEN` calls `PRTMSG`; the outer operand is replaced first, then the inner macro expands.
+- A parameter declared positionally in the prototype (`&MSG`, no `=`) must be called positionally. `MSG=text` is not a hard error by itself (ASMA017W is a warning); the whole text `MSG=text` becomes the value of `&MSG` and the damage shows up several statements later.
+- A default (`&DEST=SYSOUT`) assumes a DCB with that name. This program has only `SYSPRINT`, so every call codes `DEST=SYSPRINT`; the wrong name appears as an undefined symbol inside the nested system macro (`PUT`).
+- A message for a failed `SYSPRINT` open cannot be printed to `SYSPRINT`.
+- Result: three `CHKOPEN` expansions all branch over the failure block; `RECORDS COPIED: 0000004`.
+- Not run: the `.NOMSG` path (no message operand), the failure path with `ABEND 999,DUMP`, and the default `DEST=SYSOUT`.
+- Comments in the source still say the internal label is `&LABEL.A&SYSNDX` (`OPNA0007`, `OPNA0008`) and mention `BNO NOGOOD&SYSNDX`; these come from the earlier attempts. The code has `OK&SYSNDX` and `BO`.
+
+Assembly errors in the order they were found and fixed:
+
+| # | Message | Statement | Cause | Fix |
+|---|---|---|---|---|
+| 1 | ASMA044E Undefined symbol - `SYSOUT` | `OPEN` / `PUT` / `CLOSE` on `SYSOUT` | First seen on SB01CALL, where no `SYSOUT DCB` was coded. The same kind of mistake comes back in error 5 inside a macro expansion | Add the missing `DCB` with label `SYSOUT` |
+| 2 | ASMA112S Invalid sequence symbol - `&SYSSNDX` | `AGO .SKIPMSG&SYSSNDX` | Typo: `&SYSSNDX` instead of `&SYSNDX`; not a system variable, so it was not substituted | Correct the spelling everywhere, comments and code |
+| 3 | ASMA112S Invalid sequence symbol - `&SYSNDX` | `AGO .SKIPMSG&SYSNDX` and `.SKIPMSG&SYSNDX ANOP` | Same message after the spelling was right. First theory: a sequence symbol is limited to 7 characters after the period, and `.SKIPMSG` plus 4 digits is 11 | Shorten to `.SKP&SYSNDX` |
+| 4 | ASMA112S, unchanged | `AGO .SKP&SYSNDX` and `.SKP&SYSNDX ANOP` | The length theory was wrong: at exactly 7 characters it failed the same way. A sequence symbol cannot have a variable symbol appended in this assembler, whatever the length | Drop `&SYSNDX`; use a fixed `.SKIP` |
+| 5 | 9 errors from one mistake: ASMA017W (undefined keyword parameter `PRTMS/MSG`), ASMA150E (invalid delimiter in `MVC PRTLINE(50),MSG=MSGOPN0`), ASMA044E (`LA 1,SYSOUT`), ASMA435I (record 73 in `SYS1.MACLIB(IHBINNRA)`) | Repeated for the three `CHKOPEN` calls | `CHKOPEN` called `PRTMSG MSG=&FAILMSG`, but `&MSG` is positional. `MSG=` was not a keyword, so the whole text `MSG=MSGOPN0` became the value of `&MSG` and the model `MVC` broke. `DEST` was not supplied, so it defaulted to `SYSOUT`, which does not exist here, and `PUT SYSOUT,PRTLINE` generated `LA 1,SYSOUT` inside the system `PUT` expansion (nested `IHBINNRA`) | `PRTMSG &FAILMSG,DEST=SYSPRINT`: message positional, destination explicit |
+| 6 | ASMA044E Undefined symbol - `NOGOOD0003`, `NOGOOD0006`, `NOGOOD0009` | `BNO NOGOOD&SYSNDX` | The body was `BNO NOGOOD&SYSNDX`, `AGO .SKIP`, `NOGOOD&SYSNDX DS 0H`, `PRTMSG`, `ABEND`, `.SKIP ANOP`. `AGO` has no condition and is always taken at assembly time, so everything down to `.SKIP` was never generated, including the `NOGOOD` label that `BNO` branched to | Replace with `AIF ('&FAILMSG' EQ '').NOMSG`, `BO OK&SYSNDX` over the failure block, the label `OK&SYSNDX DS 0H` and `.NOMSG ANOP`. `.NOMSG` is the only sequence symbol left and needs no `&SYSNDX` |
+
+Error 5 produced 9 of the 11 errors reported in that compile.
+
+Takeaways from the journal:
+
+1. `&SYSNDX` is for ordinary generated symbols only. It makes a label unique per expansion and safe to emit more than once; the spelling is `&SYSNDX`.
+2. Sequence symbols are conditional-assembly only and never emitted; they do not take `&SYSNDX`, and a plain fixed name is correct.
+3. `AGO` is unconditional and is not a substitute for a run-time branch. Use a machine branch for decisions made at run time; use `AGO` and `AIF` only for decisions the assembler can make from the macro's parameters.
+4. Positional and keyword parameters are strict. A positional parameter called with keyword syntax is not a hard error and corrupts the value; the symptoms are unrelated-looking errors several statements later.
+5. A macro's default can be wrong for the caller. `PRTMSG`'s `&DEST=SYSOUT` assumes a DCB named `SYSOUT`; every call site overrides it when the program's DCB has another name.
+6. When a macro expansion produces many errors, start with the first one: here one wrong call site gave 9 of 11 messages. A diagnosis that rests on a guess (the 7-character rule) must be tested; the test failed.
 
 ## Mistakes and Fixes
 
@@ -588,6 +675,19 @@ Planned.
 | 2026-10-30 | SB01CALL | Comments say the `CALL` macro sets the high bit of the last address | `CALL` sets it only with the `VL` operand; none is coded. SB02SUBR does not test the bit, so the run is the same | Comment is wrong, code unchanged |
 | 2026-10-30 | SB01CALL | `TOTAL NOW` shows 00099350 for -99350 | `OI ZONE+7,X'F0'` forces the last zone to F, which drops the sign | Not an error in the arithmetic; the display has no sign. Use a sign character as in `PKDISP` of DT02ARTH |
 | 2026-10-30 | SB01CALL | Comment on call 2 says the amount is large enough to push the total over, and that the check is not triggered | 150 + 500 = 650 is positive; the negative check is exercised by call 3 | Comment is muddled, code unchanged |
+| 2026-11-04 | ED01EDMK | Amount 0 prints no `$` and no digit; the comment says the forced `X'21'` makes it print | `PATMAST` is read as 12 bytes with `X'21'` last, `PATTERN` is `CL11`; `MVC PATTERN,PATMAST` copies 11 bytes, so `X'21'` is dropped, `EDMK` does not set R1, and `BCTR`/`MVI` store a `$` outside the output line | Code unchanged. Make `PATTERN` as long as `PATMAST`, or move `X'21'` into byte 11; set R1 to a safe address before `EDMK` |
+| 2026-11-04 | ED01EDMK | Comment on `PATMAST` says 11 bytes (`fill,8*sel,sel21`); banner says 12 | The listed parts add to 10; the hex string read from the editor is 12 bytes | Comments are wrong, code unchanged |
+| 2026-11-04 | ED01EDMK | Comment says `BCTR` also branches on the result | `BCTR 1,0` has register 0 as second operand and never branches | Comment is wrong, code unchanged |
+| 2026-11-04 | ED01EDMK | 1,234,567 shows as `$1234,567` | `PATMAST2` has one comma, after the sixth digit | Not an error in the code; add a second comma to the pattern for millions |
+| 2026-11-04 | ED01EDMK | `MVC OUTMSG(12),PATTERN` in loop 1 | `PATTERN` is 11 bytes; byte 12 is `X'00'` from `AMTTAB` | Code unchanged; use length 11 |
+| 2026-11-05 | SB01CALL | ASMA044E Undefined symbol - `SYSOUT` on `OPEN`, `PUT` and `CLOSE` | The source used `SYSOUT` but had no `SYSOUT DCB` statement (found first on SB01CALL during the MC01MACR work) | Add `SYSOUT DCB DSORG=PS,MACRF=PM,DDNAME=SYSOUT,RECFM=FB,LRECL=80,BLKSIZE=0` |
+| 2026-11-05 | MC01MACR | ASMA112S Invalid sequence symbol - `&SYSSNDX` | Typo for `&SYSNDX`; the misspelt name is not a system variable | Correct the spelling in code and comments |
+| 2026-11-05 | MC01MACR | ASMA112S on `AGO .SKIPMSG&SYSNDX` after the spelling was fixed; still failing as `.SKP&SYSNDX` at 7 characters | A variable symbol cannot be appended to a sequence symbol; the 7-character length theory was wrong | Fixed name `.SKIP`, later `.NOMSG`; `&SYSNDX` only on emitted labels such as `OK&SYSNDX` |
+| 2026-11-05 | MC01MACR | 9 errors (ASMA017W, ASMA150E, ASMA044E, ASMA435I) on the three `CHKOPEN` calls | `PRTMSG MSG=&FAILMSG` called a positional parameter with keyword syntax, and the `&DEST=SYSOUT` default named a DCB that does not exist | `PRTMSG &FAILMSG,DEST=SYSPRINT` |
+| 2026-11-05 | MC01MACR | ASMA044E Undefined symbol - `NOGOOD0003`, `NOGOOD0006`, `NOGOOD0009` | `AGO .SKIP` is always taken at assembly time, so the `NOGOOD&SYSNDX` label that `BNO` branched to was never generated | `AIF ('&FAILMSG' EQ '').NOMSG`, `BO OK&SYSNDX`, label `OK&SYSNDX DS 0H`, `.NOMSG ANOP` |
+| 2026-11-05 | MC01MACR | Macro comments give `OPNA0007` / `OPNA0008` as the generated label and `BNO NOGOOD&SYSNDX` as the failure branch | Left over from the earlier attempts; the code defines `OK&SYSNDX` and uses `BO OK&SYSNDX` | Comments are wrong, code unchanged |
+| 2026-11-05 | MC01MACR | `EOFSW` is set to `N` and `Y` and never tested | The loop ends through `EODAD=EOFRTN`, which falls into the following code | Not an error; the switch is unused |
+| 2026-11-05 | MC01MACR | JCL comment reads `SET PRORGAM NAME` | Typo in the original JCL | Kept as in the screenshot |
 
 ## Open Questions
 
@@ -595,3 +695,5 @@ Planned.
 - BR09MTCH: the contents of `INFILE1`, `INFILE2`, `OUT1ONLY`, `OUT2ONLY` and `OUTCOMM` for the run with 5 / 5 records read, to be added to `data/`. Cases still to test: an empty file 1, an empty file 2, both empty, a repeated key in one file, and an open failure (missing DD).
 - VB01LOC: the length check before `EX` (empty name), the contents of `HLQ.MLQ.VB01LOC.OUTFILE` after the run, and whether the overrun changed anything else in storage. The end message is missing in the SYSOUT; the bytes that replaced it are not shown.
 - SB01CALL and SB02SUBR: rerun after the return code fix and check that the three lines show 0, 0 and 4; run the `LINK EP=SB02SUBR,PARAM=(TOTAL,AMOUNT)` variant (SB02SUBR would then need to be a member of `LOAD`); list the `CALL` expansion with `PRINT GEN`; code `VL` on a `CALL` and check that the high bit is set; replace the placeholder for SB01CALL lines 1-29.
+- ED01EDMK: confirm the digit count of the `X'...'` on line 174 (read from a photo as 24 hex digits, 12 bytes), the byte that the `$` overwrote for the amount 0 (R1 was not set by `EDMK`), and the column of `$999` in loop 2 (column 8 of the line by calculation; the photo is skewed).
+- MC01MACR: run with an empty `&FAILMSG` (the `.NOMSG` path), a deliberate open failure (missing `OUTFILE` DD) to see the message and the `ABEND 999,DUMP`, and `PRINT GEN` to list the expansions and the real `&SYSNDX` values. Confirm the data set name behind the masked `HLQ.MLQ.BR08SRCH.OUTFILE`. The journal's rule that a sequence symbol cannot have a variable symbol appended comes from the assembler's behaviour in these runs; confirm it against the HLASM Language Reference.
