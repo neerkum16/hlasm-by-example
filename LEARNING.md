@@ -40,6 +40,7 @@ Consolidated notes while learning HLASM on z/OS. Each program has its own write-
 | 04 Subroutines | SB02SUBR | `src/SB02SUBR.asm` | `docs/SB02SUBR.md` | none: result is in `output/SB01CALL_SYSOUT.svg` |
 | 05 Packed decimal, 06 Editing | ED01EDMK | `src/ED01EDMK.asm` | `docs/ED01EDMK.md` | `output/ED01EDMK_SYSOUT.svg` |
 | 10 Macros, 07 File I/O | MC01MACR | `src/MC01MACR.asm` | `docs/MC01MACR.md` | `output/MC01MACR_SYSOUT.svg` |
+| 09 Tables, 03 Branching and looping, 07 File I/O | TB01TABL | `src/TB01TABL.asm` | `docs/TB01TABL.md` | `output/TB01TABL_SYSOUT.svg` |
 
 ## Test Data
 
@@ -56,6 +57,7 @@ Programs that read or write files keep their test files in `data/`, named `<PROG
 | VB01LOC | OUTFILE | none | 5 variable, written by the program | Created by the program, not stored in `data/`. Not browsed, so its contents are not recorded |
 | MC01MACR | INFILE | `data/MC01MACR_INFILE.txt` | 4 x 80 | Input: the output of BR08SRCH (`TABLE SEARCH RESULTS`, CHARLIE 00000300, ALPHA 00000100, ECHO not found). Value in column 51 |
 | MC01MACR | OUTFILE | `data/MC01MACR_OUTFILE.txt` | 4 x 80 | Output of the run: a copy of the input, same four lines |
+| TB01TABL | TABFILE | `data/TB01TABL_TABFILE.txt` | 8 x 12 | Input, sorted ascending: ALPHA 0100, BRAVO 0200, CHARLIE 0300, DELTA 0400, ECHO 0500, MIKE 0600, SIERRA 0700, ZEBRA 0800 (key `CL8`, value `CL4`). The JCL builds it from inline data, so the dataset is temporary (`&&TABFILE`) |
 
 BR09MTCH has no files in `data/` yet: its input and output files were not supplied (see Open Questions).
 
@@ -79,6 +81,7 @@ Generic assemble, link and go is `jcl/ASMCLRUN.jcl`. A program that needs its ow
 | VB01LOC | `jcl/VB01LOC.jcl` | `INFILE` is `HLQ.MLQ.VB01BILD.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.VB01LOC.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(10,20),RLSE)`, `RECFM=VB`, `LRECL=37`, `BLKSIZE=0`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. The screenshot of the submitted job showed an ACF2 comment line (`$ACFJ219 ACF2 ACTIVE`) added by the system; it is not in the member and not in the file. Masked as for VB01BILD (`HLQ.MLQ`, job name `MLQM`) |
 | SB01CALL, SB02SUBR | `jcl/SB01CALL.jcl` | `STEP01` assembles SB01CALL (`&&OBJ1`), `STEP02` assembles SB02SUBR (`&&OBJ2`), `STEP03` link-edits both (`SYSLIN` concatenation) into `LOAD(SB01CALL)`, `STEP04` runs `SB01CALL`; `SYSOUT`, `SYSPRINT`, `SYSUDUMP` to `SYSOUT=*`. No `PGMNAME` symbol, member names are coded in each step. `SET SOURCE` and `SET LOAD` use the masked qualifiers `HLQ.MLQ`; job name masked as `MLQM`. Both `COND` lists test the earlier steps for return code 8 or more. No dataset is created or cataloged, so it can be rerun as is |
 | MC01MACR | `jcl/MC01MACR.jcl` | `INFILE` is `HLQ.MLQ.BR08SRCH.OUTFILE` `DISP=SHR`; `OUTFILE` is `HLQ.MLQ.MC01MACR.OUTFILE` `NEW,CATLG,DELETE`, `SPACE=(TRK,(1,2),RLSE)`, `RECFM=FB`, `LRECL=80`, `BLKSIZE=0`; `STEPLIB`, `SYSOUT`, `SYSPRINT`, `SYSUDUMP`. Masked `HLQ.MLQ`; job name `MLQA`. The `SET` banner reads `SET PRORGAM NAME, SOURCE & LOAD LIBRARY`, kept as in the screenshot. In step 3 each DD has one blank after `DD` (operands in column 15), unlike steps 1 and 2 |
+| TB01TABL | `jcl/TB01TABL.jcl` | Four steps: `STEP01` assembles (`ASMA90`), `STEP02` link-edits (`HEWL`), `STEP03` runs `IEBGENER` (`SYSIN DD DUMMY`, `SYSUT1 DD *` with the 8 records, `SYSUT2` `&&TABFILE`, `DISP=(NEW,PASS)`, `SPACE=(TRK,(1,1))`, `RECFM=FB`, `LRECL=12`, `BLKSIZE=0`), `STEP04` runs the program with `TABFILE` `DSN=&&TABFILE,DISP=(OLD,DELETE)`; `STEPLIB`, `SYSOUT`, `SYSPRINT`, `SYSUDUMP`. Masked `HLQ.MLQ`; job name `MLQM`. No dataset is cataloged, so it can be rerun as is. The `SET` banner reads `SET PRORGAM NAME`, kept as in the screenshot. The screenshots show the `STEP03` and `STEP04` DD statements with one blank after `DD`, except `TABFILE`, which has two |
 
 `AMHFOUT` is cataloged on a normal end, so delete the dataset (`APXT.TAQ8656.AMH.OUTPUT`) before a rerun or the step fails on allocation. The same applies to `HLQ.MLQ.TEST.PARTFILE` of DS02BILD `HLQ.MLQ.VB01BILD.OUTFILE` of VB01BILD and `HLQ.MLQ.VB01LOC.OUTFILE` of VB01LOC. `HLQ.MLQ.MC01MACR.OUTFILE` of MC01MACR is cataloged the same way.
 
@@ -111,7 +114,7 @@ Each article starts with a Scope line that states what the programs exercise.
 | `EX`: operand length at run time | 07 | VB01LOC | `docs/concepts/EXECUTE.md` |
 | Boundary cases and storage overruns | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | `docs/concepts/STORAGE-OVERRUNS.md` |
 
-Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC. `DATA-CONVERSIONS.md` still has to be updated for `EDMK` (ED01EDMK). Topic 10 has its first program, MC01MACR; a `docs/concepts/MACROS.md` article (macro definition, parameters, `&SYSNDX`, `AIF`, sequence symbols, macro versus subroutine) is still to be written.
+Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC. `DATA-CONVERSIONS.md` still has to be updated for `EDMK` (ED01EDMK). Topic 10 has its first program, MC01MACR; a `docs/concepts/MACROS.md` article (macro definition, parameters, `&SYSNDX`, `AIF`, sequence symbols, macro versus subroutine) is still to be written. `docs/concepts/TABLES.md` still has to be updated for TB01TABL (run-time table, `BXLE` over a loaded table, binary search).
 
 ## Register Conventions
 
@@ -576,7 +579,34 @@ Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, 
 
 ## 09 Tables
 
-Planned. The serial search and indexed stepping used so far are in `docs/concepts/TABLES.md`.
+Concept article: `docs/concepts/TABLES.md` (serial search and indexed stepping; not yet updated for TB01TABL).
+
+### TB01TABL: a table loaded from a file, BXLE and binary search
+
+Source: `src/TB01TABL.asm`. Run with `jcl/TB01TABL.jcl` (job J0011942). Not assembled or run by Claude; the output is from the owner's run.
+
+| Item | Use |
+|---|---|
+| `TABLE DS (MAXENT)CL12` | Empty storage for the worst case (200 x 12 = 2400 bytes) |
+| `ENTCNT` | The real number of entries; `MAXENT` only says how many fit |
+| `GET TABFILE,0(7)` | Read a record straight into the slot R7 points at |
+| `BXLE r1,r3,target` | Add the increment (even register of r3) to r1, compare with the limit (odd register), branch while r1 <= limit |
+| `TABLEND` | Address of the last loaded entry, the `BXLE` limit |
+| LOW, HIGH, MID | Entry numbers (R4, R5, R6), not addresses |
+
+Notes:
+
+- Declare the table as empty `DS`, load it, count the entries as they arrive and keep the count. R8 is intact at the `EODAD` routine because QSAM keeps R2 to R13; `ST 8,ENTCNT` saves it.
+- `BXLE` index = address of an entry, increment = `ENTLEN`, limit = address of the last entry (not the address after it). The limit is `TABLE` + (count - 1) x `ENTLEN`: `BCTR 8,0`, `MH 8,=H'12'`, `LA 3,TABLE`, `AR 3,8`. R2 and R3 must be an even-odd pair; R3 is reloaded from `TABLEND` before each `BXLE`.
+- `BXLE` tests at the bottom, so the walk body runs at least once. An empty file would give R3 = `TABLE` - 12 and one unfilled line (read from the code, not run).
+- Binary search: LOW = 0, HIGH = count - 1. `LR 6,4`, `AR 6,5`, `SRA 6,1` give MID. The byte offset is made only when an entry is touched: `LR 3,6`, `MH 3,=H'12'`, `LA 7,TABLE(3)`. `CLC SRCHKEY,0(7)` then `BE`, `BL`, or fall into LOW = MID + 1. `LA 4,1(,6)` is LOW = MID + 1; `BCTR 6,0` and `LR 5,6` are HIGH = MID - 1. The loop ends when `CR 4,5` shows LOW above HIGH (`BH BSNOTFND`).
+- The search needs an ascending key order. Nothing in the program checks it; on unsorted data it would report `NOT FOUND` for keys that are present.
+- Result with the 8-entry file: `ALPHA` found in 3 passes (MID 3, 1, 0), `MIKE` in 2 (MID 3, 5), `ZULU` not found after 4 compares (MID 3, 5, 6, 7), because `ZULU` is above `ZEBRA`.
+- Output (15 lines): `ENTRIES LOADED: 0000008`, 8 key / value lines (value at column 13), the search lines with the message at column 11 and the value at column 51.
+- The `MAXENT` check is after the `GET`: `C 8,=F'200'` and `BNH LOADLOOP` loop back at count 200, so the 201st record is stored 12 bytes past `TABLE` (over the start of the `TABFILE` DCB, which follows) before count 201 falls into `DC H'0'`. Not exercised.
+- `C 8,=F'200'`, `MH ...,=H'12'` (twice) and `LA ...,ENTLEN` do not all use the `EQU` names; changing `MAXENT` or `ENTLEN` needs the literals changed as well.
+- The items after `TABLE` (DCBs, literal pool) must be within 4096 bytes of the base register R12; a much larger `MAXENT` would need a second base register.
+- `PRTHDR` is a local macro defined before the `CSECT`; `PRINT NOGEN` hides its expansions.
 
 ## 10 Macros
 
@@ -686,6 +716,10 @@ Takeaways from the journal:
 | 2026-11-05 | MC01MACR | Macro comments give `OPNA0007` / `OPNA0008` as the generated label and `BNO NOGOOD&SYSNDX` as the failure branch | Left over from the earlier attempts; the code defines `OK&SYSNDX` and uses `BO OK&SYSNDX` | Comments are wrong, code unchanged |
 | 2026-11-05 | MC01MACR | `EOFSW` is set to `N` and `Y` and never tested | The loop ends through `EODAD=EOFRTN`, which falls into the following code | Not an error; the switch is unused |
 | 2026-11-05 | MC01MACR | JCL comment reads `SET PRORGAM NAME` | Typo in the original JCL | Kept as in the screenshot |
+| 2026-11-11 | TB01TABL | `MAXENT` check cannot stop a 201st record before it is stored | `C 8,=F'200'` and `BNH LOADLOOP` run after the `GET` and the `LA`, so at count 200 the loop reads record 201 into slot 201 (12 bytes past `TABLE`) before count 201 reaches `DC H'0'` (read from the code, not run) | Not fixed. The test has to come before the `GET`; untested |
+| 2026-11-11 | TB01TABL | Comment says `BINSRCH` works in entry numbers | No label or instruction has that name; the routine is `BSLOOP` | Comment is wrong, code unchanged |
+| 2026-11-11 | TB01TABL | Source comments are at column 35 without `*` and up to 35 characters | The editor source does not follow the repo column rules | The repo copy has the comments from column 40 as `* text`, shortened to 30 characters; code unchanged |
+| 2026-11-11 | TB01TABL | Empty `TABFILE` would print one unfilled line in the `BXLE` walk | R8 = 0, `BCTR` gives -1, R3 = `TABLE` - 12, and the walk body runs once before `BXLE` tests (read from the code, not run) | Not fixed; guard with `LTR` and `BZ` on `ENTCNT` before the walk |
 
 ## Open Questions
 
@@ -695,3 +729,4 @@ Takeaways from the journal:
 - SB01CALL and SB02SUBR: rerun after the return code fix and check that the three lines show 0, 0 and 4; run the `LINK EP=SB02SUBR,PARAM=(TOTAL,AMOUNT)` variant (SB02SUBR would then need to be a member of `LOAD`); list the `CALL` expansion with `PRINT GEN`; code `VL` on a `CALL` and check that the high bit is set; replace the placeholder for SB01CALL lines 1-29.
 - ED01EDMK: confirm the digit count of the `X'...'` on line 174 (read from a photo as 24 hex digits, 12 bytes), the byte that the `$` overwrote for the amount 0 (R1 was not set by `EDMK`), and the column of `$999` in loop 2 (column 8 of the line by calculation; the photo is skewed).
 - MC01MACR: run with an empty `&FAILMSG` (the `.NOMSG` path), a deliberate open failure (missing `OUTFILE` DD) to see the message and the `ABEND 999,DUMP`, and `PRINT GEN` to list the expansions and the real `&SYSNDX` values. Confirm the data set name behind the masked `HLQ.MLQ.BR08SRCH.OUTFILE`.
+- TB01TABL: run with an empty `TABFILE` (expected: `ENTRIES LOADED: 0000000`, one unfilled line in the walk, three not-found lines), with 200 and 201 records (the late `MAXENT` check) and with an unsorted file (wrong `NOT FOUND`). The `SYSPRINT` of the `IEBGENER` step was not supplied: `SYSUT1` is an inline stream (80-byte records) and `SYSUT2` is `LRECL=12`; its return code and message were not checked.
