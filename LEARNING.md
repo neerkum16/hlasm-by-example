@@ -113,8 +113,13 @@ Each article starts with a Scope line that states what the programs exercise.
 | Variable-length records and the RDW | 07, 08 | VB01BILD, VB01LOC | `docs/concepts/VARIABLE-RECORDS.md` |
 | `EX`: operand length at run time | 07 | VB01LOC | `docs/concepts/EXECUTE.md` |
 | Boundary cases and storage overruns | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | `docs/concepts/STORAGE-OVERRUNS.md` |
+| Separate programs: `CALL`, `BALR`, return code | 04 | SB01CALL, SB02SUBR | `docs/concepts/EXTERNAL-CALLS.md` |
+| Source macros, `&SYSNDX`, `AIF` | 10 | MC01MACR, TB01TABL | `docs/concepts/MACROS.md` |
+| Register lifetime | 01, 04, 07, 08, 10 | SB01CALL, SB02SUBR, ED01EDMK, FS01SORT, VB01LOC, VB02FIX, TB01TABL, MC01MACR, DS02DSCT | `docs/concepts/REGISTER-LIFETIME.md` |
+| Running a program: assemble, link-edit, execute | all | Members of `jcl/` | `docs/concepts/RUN-JCL.md` |
+| Test coverage | 03, 04, 07, 08, 10 | FS01SORT, MC01MACR, VB02FIX, SB01CALL, SB02SUBR, TB01TABL, ED01EDMK | `docs/concepts/TEST-COVERAGE.md` |
 
-Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines, and SB01CALL / SB02SUBR add the first separate subprogram, a `CALL` macro and a hand-built `BALR` call (`LINK` is only in a comment). Existing articles still to update for the newer programs: `SUBROUTINES.md` and `LINKAGE.md` (external call, parameter list, return code in R15, SB01CALL and SB02SUBR) and `CONDITION-CODE.md` (new source programs). `DSECTS.md`, `RECORD-LAYOUTS.md`, `OPERAND-LENGTHS.md`, `PACKED-VALIDITY.md`, `SUBROUTINES.md` and `QSAM-CONTROL-BREAK.md` were updated for VB01BILD and VB01LOC. `DATA-CONVERSIONS.md` still has to be updated for `EDMK` (ED01EDMK). Topic 10 has its first program, MC01MACR; a `docs/concepts/MACROS.md` article (macro definition, parameters, `&SYSNDX`, `AIF`, sequence symbols, macro versus subroutine) is still to be written. `docs/concepts/TABLES.md` still has to be updated for TB01TABL (run-time table, `BXLE` over a loaded table, binary search).
+Topic 04 is In progress: `SUBROUTINES.md` covers the internal `BAL` routines and `EXTERNAL-CALLS.md` covers the separate subprogram (SB01CALL, SB02SUBR: `CALL` macro, hand-built `BALR` call, `LINK` only in a comment). Topic 10 has its first program, MC01MACR, and `MACROS.md` covers it. The existing articles have been updated for the newer programs (SB01CALL, SB02SUBR, ED01EDMK, TB01TABL, FS01SORT, VB02FIX, MC01MACR).
 
 ## Register Conventions
 
@@ -311,7 +316,7 @@ Also listed under 07 File I/O and 08 DSECTs. The file handling is in the 07 sect
 
 DS02DSCT already uses two call levels and a parameter list in R1; see its notes under 08 DSECTs. Level 1 calls use `BAL 10` / `BR 10`, the call from inside a level 1 routine uses `BAL 9` / `BR 9`.
 
-Concept article: `docs/concepts/SUBROUTINES.md` (internal `BAL` routines; not yet updated for SB01CALL and SB02SUBR).
+Concept article: `docs/concepts/SUBROUTINES.md` (internal `BAL` routines) and `docs/concepts/EXTERNAL-CALLS.md`.
 
 ### SB01CALL and SB02SUBR: a separate subprogram with standard linkage
 
@@ -579,7 +584,7 @@ Concept articles: `docs/concepts/DSECTS.md`, `docs/concepts/RECORD-LAYOUTS.md`, 
 
 ## 09 Tables
 
-Concept article: `docs/concepts/TABLES.md` (serial search and indexed stepping; not yet updated for TB01TABL).
+Concept article: `docs/concepts/TABLES.md` (serial search, indexed stepping, run-time table, `BXLE` walk, binary search).
 
 ### TB01TABL: a table loaded from a file, BXLE and binary search
 
@@ -610,7 +615,7 @@ Notes:
 
 ## 10 Macros
 
-Concept article: none yet (`docs/concepts/MACROS.md` is planned).
+Concept article: `docs/concepts/MACROS.md`.
 
 ### MC01MACR: source macros, &SYSNDX and AIF
 

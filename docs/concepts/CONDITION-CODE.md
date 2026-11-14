@@ -1,8 +1,8 @@
 # Condition Code and Branch Masks
 
-Scope: the condition code as set by the compare instructions `CR`, `C`, `CLC`, `CLI` and `LTR`, by arithmetic, and by `TM` on a single bit, and the extended branch mnemonics as used in BR01CMP, BR02MASK and QSAMPROC. Condition code settings of instructions not used in these programs are not described. Hand-computed items are marked; the programs were not assembled or run.
+Scope: the condition code as set by the compare instructions `CR`, `C`, `CLC`, `CLI` and `LTR`, by arithmetic, and by `TM` on a single bit, and the extended branch mnemonics as used in BR01CMP, BR02MASK and QSAMPROC, and the tests in VB02FIX, SB02SUBR, TB01TABL, FS01SORT and MC01MACR. Condition code settings of instructions not used in these programs are not described. Hand-computed items are marked; the programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: BR01CMP, BR02MASK, QSAMPROC (`TM` open check).
+Source programs: BR01CMP, BR02MASK, QSAMPROC (`TM` open check), VB02FIX, SB02SUBR, TB01TABL, FS01SORT, MC01MACR.
 
 ## Central Idea
 
@@ -76,6 +76,25 @@ The mask bits are 8 for CC 0, 4 for CC 1, 2 for CC 2 and 1 for CC 3. Add bits to
 
 QSAMPROC tests whether a DCB is open with `TM DCBOFLGS,DCBOFOPN`, followed by `BNO error`. `TM` tests only the bits that are ones in the mask. With a single bit tested, the CC is 0 when the bit is off and 3 when it is on, so `BNO` (CC not 3) branches when the bit is off.
 
+## Tests in the Later Programs
+
+| Program | Test | What it decides |
+|---|---|---|
+| VB02FIX | `LTR 5,5`, `BZ`, `BM`, then `C 5,=F'256'`, `BH` | Name length zero, negative, or over 256 |
+| SB02SUBR | `LTR 4,4`, `BM SUBRBAD` | Total negative gives return code 4; zero and positive give 0 |
+| TB01TABL | `C 8,=F'200'`, `BNH LOADLOOP` | Keep loading while the count is not above 200 |
+| TB01TABL | `CR 4,5`, `BH BSNOTFND` | LOW above HIGH: search space empty |
+| TB01TABL, FS01SORT | `CLC key,entry`, `BE`, `BL`, then the remaining case | Equal, low, high |
+| FS01SORT | `CLI EOFASW,C'Y'`, `BE` | End-of-file switch |
+| FS01SORT | `CLC CURRGN,LASTRGN`, `BE COMMNOBK` | Same region: no break |
+| MC01MACR | `TM DCBOFLGS,DCBOFOPN`, `BO OK&SYSNDX` | Open succeeded |
+
+- One `LTR` can feed several branches. `BZ` does not change the condition code, so `BM` after it still tests the `LTR` result. If neither branch is taken the value is positive. VB02FIX then runs `C` and `BH`, which set a new code.
+- `LTR 4,4` in SB02SUBR tests only the sign: a total of 0 does not take `BM`, so it gives return code 0.
+- `BNH` after `C 8,=F'200'` loops back while the count is 200 or less. The 201st `GET` has then already stored a record, so the limit is applied one record late (read from the code, not run).
+- MC01MACR branches on the bit being on (`BO`). QSAMPROC tests the same bit and branches on it being off (`BNO` to the error routine). Both rely on a single-bit `TM`, CC 0 for off and 3 for on. In the macro the code after the `BO` is the failure path.
+- `AIF` and `AGO` in a macro do not test the condition code. They run at assembly time. The decision at run time is the machine branch (`BO OK&SYSNDX`).
+
 ## Rules
 
 - The branch must come immediately after the instruction that sets the CC. An instruction in between that changes the CC changes the result.
@@ -91,3 +110,6 @@ QSAMPROC tests whether a DCB is open with `TM DCBOFLGS,DCBOFOPN`, followed by `B
 | `BNH` and `BC 12` differ | CC 3 after arithmetic | Choose the mask for the CC values that can occur |
 | Branch after `SRL` always goes one way | `SRL` leaves the CC unchanged | `LTR` first |
 | `BCR 0,reg` never branches | A register field of 0 suppresses the branch | Use a nonzero register |
+| A test after `BCTR` does nothing | `BCTR` does not set the condition code | Test with `LTR` before `BCTR` |
+| Limit exceeded by one | The compare comes after the store that uses the last slot | Compare before the `GET` or the store |
+| `AGO` used for a run-time choice | `AGO` is decided when assembling | Use a machine branch such as `BO` |

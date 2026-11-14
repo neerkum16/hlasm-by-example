@@ -89,6 +89,11 @@ Each article explains one idea that runs across several programs. It starts with
 | `VARIABLE-RECORDS.md` | 07, 08 | VB01BILD, VB01LOC | `RECFM=VB`, the 4-byte RDW, `LRECL` as the longest record, length arithmetic (+17, -17), `DS 0CL1` variable part, Browse view |
 | `EXECUTE.md` | 07 | VB01LOC | `EX` with `MVC`, length minus 1 with `BCTR`, low byte of the register, the empty-name failure and an untested fix |
 | `STORAGE-OVERRUNS.md` | 03, 07, 08 | VB01LOC, DS01DSCT, VB01BILD, DS02DSCT | Over-reads and overruns seen in runs, what an overrun overwrites, one fault hiding another, boundary tests |
+| `EXTERNAL-CALLS.md` | 04 | SB01CALL, SB02SUBR | Separate program called with `CALL` or `BALR`, parameter list in R1 with the high bit on the last address, `V`-type constant, save area chain, return code in R15, linking two object decks |
+| `MACROS.md` | 10 | MC01MACR, TB01TABL | `MACRO` and `MEND`, positional and keyword parameters, `&LAB`, `&SYSNDX`, `AIF` and `ANOP`, why `AGO` failed, macro versus subroutine |
+| `REGISTER-LIFETIME.md` | 01, 04, 07, 08, 10 | SB01CALL, SB02SUBR, ED01EDMK, FS01SORT, VB01LOC, VB02FIX, TB01TABL, MC01MACR, DS02DSCT | What changes R1, R15, R12 and the return register: macros, `LM`, nested `BAL`, `EDMK`; one register one job |
+| `RUN-JCL.md` | all | The members of `jcl/` | `ASMA90`, `HEWL` and run step, `&&OBJ` and `DISP`, `COND`, two object decks in one load module, `IEBGENER` test data, reruns of cataloged data sets, output DDs |
+| `TEST-COVERAGE.md` | 03, 04, 07, 08, 10 | FS01SORT, MC01MACR, VB02FIX, SB01CALL, SB02SUBR, TB01TABL, ED01EDMK | Which branches the test data ran, paths that never ran, data that would run them, comments that disagree with the code |
 
 Add a row when an article is written.
 

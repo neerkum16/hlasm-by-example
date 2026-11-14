@@ -1,8 +1,8 @@
 # Packed Data Validity, Initialisation and Test Files
 
-Scope: why a packed field must hold a valid sign nibble before `AP` uses it, which instructions check and which do not, initialising work fields with `ZAP`, building a file with packed data from a program, and reading packed bytes in ISPF Browse, as used in DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC and VB01BILD (a variable-length file with a packed field). Packed fields in other kinds of data sets are not used in any program and are not described. Packed arithmetic rules are in the packed arithmetic article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: why a packed field must hold a valid sign nibble before `AP` uses it, which instructions check and which do not, initialising work fields with `ZAP`, building a file with packed data from a program, and reading packed bytes in ISPF Browse, as used in DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC and VB01BILD (a variable-length file with a packed field), FS01SORT (a zoned amount in a file packed by the program, and packed subtotals) and SB01CALL (a signed binary total shown through `CVD`, `UNPK` and `OI`). Packed fields in other kinds of data sets are not used in any program and are not described. Packed arithmetic rules are in the packed arithmetic article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC, VB01BILD.
+Source programs: DS02DSCT, DS02BILD, DS01DSCT, BR09MTCH, QSAMPROC, VB01BILD, FS01SORT, SB01CALL.
 
 ## Central Idea
 
@@ -25,7 +25,7 @@ The first version of DS02DSCT abended with S0C7 at `AP GRANDTOT,PARMAMT` on the 
 | `MVC` | No | Copies bytes only |
 | `UNPK` | No | `SHOWREC` printed record 1 correctly before `AP` failed |
 | `OI` | No | Changes a nibble, reads no data |
-| `PACK` | No | Does not check its input (DT03CONV) |
+| `PACK` | No | Does not check its input (DT03CONV). FS01SORT.md reaches the same conclusion for `PACK CURAMT,AREC+14(6)`: a non-digit in the input gives a wrong value, and a bad sign nibble would make `AP` abend with S0C7 |
 
 Because the first three display steps do not check, a bad field can print without error and fail only later.
 
@@ -35,6 +35,7 @@ Because the first three display steps do not check, a bad field can print withou
 - A packed literal carries the sign nibble `C`: `=P'12345'` is X'12345C'.
 - `ZAP` into a longer field adds leading zero bytes and a valid sign, so field lengths may differ.
 - Field sizes: `PL4` holds 7 digits, `PL5` holds 9, `PL6` holds 11. Pick the size from the largest value.
+- FS01SORT does `ZAP SUBTOT,=P'0'` and `ZAP GRANDTOT,=P'0'` before the first record, and `PUTSUBT` resets `SUBTOT` with `ZAP` after every subtotal line, so the field is valid again for the next region.
 
 ## Building a Test File: DS02BILD
 
@@ -64,6 +65,20 @@ VB01BILD builds a `RECFM=VB` file in locate mode. It has two things that cannot 
 - Per VB01BILD.md, the reader's `AP` and `UNPK` need the valid sign.
 - `PUT` in locate mode does not clear the buffer, so every byte inside the record length is set by the program. The amount's five bytes are all set by `ZAP`.
 
+## Packing Zoned Input: FS01SORT
+
+The files of FS01SORT carry the amount as 6 zoned digits in columns 15 to 20. The record comment calls it `PL6`, but the file holds characters, and the program converts it.
+
+```
+         PACK  CURAMT,AREC+14(6)       * 6 zoned digits to PL6
+         AP    SUBTOT,CURAMT
+         AP    GRANDTOT,CURAMT
+```
+
+- `PACK` puts the zone of the last digit in the sign nibble. A zoned digit has zone F, so a valid input gives sign F, which `AP` accepts.
+- Nothing checks the input. A character that is not a digit gives a wrong value, and a bad last-byte zone would give an invalid sign. This was not in the test data.
+- `CURAMT`, `SUBTOT` and `GRANDTOT` are `PL6`, so the 6 input digits and the totals fit.
+
 ## Reading Packed Bytes
 
 | Bytes | Character view in Browse |
@@ -85,6 +100,7 @@ VB01BILD builds a `RECFM=VB` file in locate mode. It has two things that cannot 
 - `UNPK zone,field` and `OI zone+last,X'F0'` give printable digits. The sign is lost.
 - A zone shorter than the field keeps only the low-order digits. `UNPK ZONE7,PARTAMT` shows 7 of the 9 digits of a `PL5`. An amount over 9999999 loses its leftmost digits on the line but is added to the total in full.
 - `GRANDTOT` is `PL6`, 11 digits, shown in `ZONE11` without loss.
+- A negative value prints as positive after `OI`. SB01CALL's third call leaves the total at -99350, and the line shows `00099350`. The same `OI ZONE11+10,X'F0'` in FS01SORT would show a negative total as positive. All FS01SORT amounts are positive.
 - Counters are `PL4` with a 7-byte zone. A count over 9999999 loses its leftmost digit.
 
 ## Rules
@@ -105,3 +121,5 @@ VB01BILD builds a `RECFM=VB` file in locate mode. It has two things that cannot 
 | S0C7 after editing the test file | Text save damaged the packed bytes | Rebuild with DS02BILD |
 | Rerun of DS02BILD fails at allocation | Data set exists | Delete it first |
 | Total larger than the printed amounts | Display zone shorter than the field | Compare the zone length with the digit count |
+| Negative total prints with no sign | `OI` after `UNPK` forces zone F | Save the sign before the `OI`, or print it separately |
+| Wrong total from a file with a bad character in the amount | `PACK` does not check its input | Check that every byte is a digit before the `PACK` |

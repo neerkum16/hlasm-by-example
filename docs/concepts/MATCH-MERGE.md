@@ -1,8 +1,8 @@
 # Match-Merge of Two Sorted Files
 
-Scope: comparing two files sorted on the same key with one current record per file, a `CLC` three-way decision, draining the rest of one file after the other ends, end-of-file switches and `HIVALUE`, as in BR09MTCH. Files with more than two inputs, repeated keys paired as groups and update or transaction matching are not used in any program and are not described. Control break on one file is in the QSAM article. The program was not assembled or run, apart from the run shown in its SYSOUT screen.
+Scope: comparing two files sorted on the same key with one current record per file, a `CLC` three-way decision, draining the rest of one file after the other ends, end-of-file switches and `HIVALUE`, as in BR09MTCH, and the same merge feeding a control break on the merged stream, as in FS01SORT. Files with more than two inputs, repeated keys paired as groups and update or transaction matching are not used in any program and are not described. Control break on one file is in the QSAM article. The programs were not assembled or run, apart from the runs shown in their SYSOUT screens.
 
-Source programs: BR09MTCH.
+Source programs: BR09MTCH, FS01SORT.
 
 ## Central Idea
 
@@ -74,6 +74,34 @@ Counts: read 3 and 2; file-1-only 2; file-2-only 1; common 1.
 
 Records read from file 1 equal file-1-only plus common. Records read from file 2 equal file-2-only plus common. The repo run gives 4 + 1 = 5 for each file, and 4 + 4 + 1 = 9 records written.
 
+## Merge Feeding a Control Break: FS01SORT
+
+FS01SORT merges `FILEA` and `FILEB` into one stream and prints a subtotal when the region changes. Each record is 20 bytes: key `CL8` at column 1, region `CL6` at column 9, amount as 6 zoned digits at column 15.
+
+| File | Records |
+|---|---|
+| `FILEA` | A001, A003, B002, B004, C005 |
+| `FILEB` | A002, B003, C004, C006 |
+
+```
+MERGE    CLI   EOFASW,C'Y'
+         BE    MRGONLYB
+         CLI   EOFBSW,C'Y'
+         BE    MRGONLYA
+         CLC   AKEY,BKEY
+         BE    MRGMATCH                * Equal
+         BL    MRGTAKEA                * File A lower
+         B     MRGTAKEB                * File B lower
+```
+
+- Each path does `BAL 10,PROCA` or `BAL 10,PROCB`, reads the next record from only the file that was used, and branches back to `MERGE`. `PROCA` and `PROCB` both end with `B COMMON`, where the region is compared with the previous one.
+- The merge key is `AKEY` and `BKEY` (columns 1 to 8), not the region. The banner comments say the region is the match-merge key; the code does not compare it.
+- The control break works because the keys A, B and C rise with the regions EAST, WEST and NORTH in the test data. A control break needs the data grouped by region, not sorted by region: EAST, WEST, NORTH is not alphabetical and still gives three subtotals. A region that came back later in the merged stream would get a second subtotal.
+- There is no `HIVALUE`. `AKEY` and `BKEY` keep their last value after end of file. This is safe only because `MERGE` tests the end switches before the `CLC`.
+- Result: 9 detail lines in key order (A001, A002, A003, B002, B003, B004, C004, C005, C006), subtotals EAST 6000, WEST 10500 and NORTH 15000, and a grand total of 31500. The last subtotal is printed by `MRGDONE` after the loop.
+- The equal-key path (`MRGMATCH`) is not exercised: no key is in both files. On equal keys the program processes the `FILEA` record and then reads both files, so the `FILEB` record with the same key is read and dropped, without a line and without adding to the totals. BR09MTCH writes an equal key once to `OUTCOMM`.
+- An empty `FILEA` or `FILEB` is handled by the same switches. If both are empty the merge goes straight to `MRGDONE`, `PUTSUBT` skips the print and the grand total is 0. This case is not in the test data.
+
 ## Rules
 
 - Both files must be sorted ascending on the same key, in the same collating sequence as `CLC` (EBCDIC). With unsorted input a match can be missed or reported as "only".
@@ -81,6 +109,7 @@ Records read from file 1 equal file-1-only plus common. Records read from file 2
 - Test the EOF switches before the `CLC`. After end of file the key is not a real key. `HIVALUE` compares higher than any printable key and is a second safeguard, not the main one.
 - The priming read gives the first comparison two keys. It is the same idea as the priming read in a control-break program.
 - Open `SYSPRINT` first and close it last, so open errors and the final counts can be reported.
+- Decide what an equal key means before coding the match path. BR09MTCH writes it once to a common file. FS01SORT processes the `FILEA` record only and drops the `FILEB` record.
 - Keys must be unique within each file. A key that appears twice in one file is not handled as a pair: the first occurrence matches the other file's key and the repeat is compared with the next key of the other file, so it ends in an "only" file.
 
 ## Common Failures
@@ -93,3 +122,6 @@ Records read from file 1 equal file-1-only plus common. Records read from file 2
 | Counts do not reconcile | Count incremented in the end-of-file routine | Count only after a successful `GET`, as `READ1` does |
 | Repeated key shown as "only" | Duplicate keys in one file | Remove duplicates or code a group match |
 | Last records of one file missing | No drain path | Keep `FLUSH1` and `FLUSH2` running through `CHECK2` |
+| A matching record disappears with no line | Equal-key path processes one record and reads both files | Process or count both records, or write the match to a common file |
+| A region gets two subtotals | The same region appears twice in the merged stream | Order the keys so each region is contiguous |
+| Last region has no subtotal | No `PUTSUBT` call after the loop | Call it in the end routine, as `MRGDONE` does |

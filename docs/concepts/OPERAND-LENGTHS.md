@@ -1,8 +1,8 @@
 # Operand Lengths: Implied and Explicit
 
-Scope: where the length of a storage-to-storage operand comes from (`MVC`, `CLC`, `UNPK`, `ZAP`, `AP`) as seen in DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH and QSAMPROC: implied from the field, coded explicitly, taken from a literal, or absent for a register operand. A length decided at run time with `EX` (VB01LOC) is summarised here and described in the EX article. Instructions not used in these programs are not described. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: where the length of a storage-to-storage operand comes from (`MVC`, `CLC`, `UNPK`, `ZAP`, `AP`) as seen in DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC, ED01EDMK, TB01TABL and FS01SORT: implied from the field, coded explicitly, taken from a literal, or absent for a register operand. A length decided at run time with `EX` (VB01LOC) is summarised here and described in the EX article. Instructions not used in these programs are not described. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC.
+Source programs: DS01DSCT, DS02BILD, DS02DSCT, BR09MTCH, QSAMPROC, VB01BILD, VB01LOC, ED01EDMK, TB01TABL, FS01SORT.
 
 ## Central Idea
 
@@ -36,6 +36,27 @@ A storage-to-storage instruction needs a length. The assembler takes it from the
 - VB01LOC gets the name length from the RDW at run time (`LH 5,INRDWLL`, `S 5,=F'17'`). An `MVC` cannot take a register length, so it uses `EX 5,MVCSHOWN` with the length minus 1 in R5.
 - The coded length of the target `MVC` is 1. The register supplies the real length, 1 to 256.
 - A zero length gives -1 after `BCTR`, and the move is 256 bytes. This failed in the VB01LOC run on record 4.
+- VB02FIX tests the length before `EX`: `LTR`, `BZ`, `BM`, and `C 5,=F'256'` with `BH`. The 256 is the most one `MVC` can move.
+
+## Length of a Work Area against Its Master: ED01EDMK
+
+`PATMAST` holds the pattern and `PATTERN` is the work area that `EDMK` overwrites.
+
+- `PATTERN` is `CL11`, so `MVC PATTERN,PATMAST` copies 11 bytes. The hex string of `PATMAST` as read from the editor is 12 bytes, so its last byte, the `X'21'`, is not copied. The banner of the source says 12 bytes and the line comment says 11.
+- With no `X'21'` in the work area, no digit selector becomes significant for the amount 0, `EDMK` leaves R1 alone, and `BCTR`/`MVI` store a `$` through a stale R1.
+- Loop 1 copies 12 bytes of `PATTERN` to the output line with `MVC OUTMSG(12),PATTERN`. Byte 12 is the first byte of `AMTTAB`, `X'00'`, which shows as a blank. Loop 2 copies 11 bytes (`PATTERN2` is `CL11`).
+- `UNPK ZONESHOW,0(5,7)` codes the length of the packed source, 5 bytes, because the register 7 base has no attribute. `ZONESHOW` is `CL10`, 2 x 5.
+- Make the work area as long as the master, and copy the length of the work area.
+
+## Lengths Spread over a Program: TB01TABL
+
+- `ENTLEN EQU 12` names the entry length, but `MH 8,=H'12'` (twice) and `C 8,=F'200'` carry the numbers as literals. Changing `ENTLEN` or `MAXENT` does not change them.
+- `TABFILE` has `LRECL=12`, the same as `ENTLEN`, so `GET TABFILE,0(7)` fills exactly one slot. A record longer than the entry would run into the next slot.
+- `PRTLINE+10(40)` takes the message from a `CL40` constant and `PRTLINE+50(4)` takes the 4-byte value. The `PRTHDR` macro does `MVC PRTLINE(50),&MSG`, so each heading must be `CL50`.
+
+## Explicit Length on a Zoned Source: FS01SORT
+
+`PACK CURAMT,AREC+14(6)` codes the source length, 6 digits at offset 14 of a 20-byte record. The target `CURAMT` is `PL6`. A change of the record layout needs both the offset and the length changed.
 
 ## Fixed Lengths Agreed by Convention
 
@@ -84,3 +105,6 @@ A storage-to-storage instruction needs a length. The assembler takes it from the
 | Number misaligned after a label change | Fixed offset not updated | Change the offset and the `MVC` length |
 | ASMA068S on a large constant | Type C over 256 bytes | `DS`, or split |
 | `FTX` matches `FT` | Compare length shorter than the field | `=CL3'FT'` or a longer compare |
+| Last pattern byte missing | Work area shorter than its master | Equal lengths |
+| Extra byte copied from the field after the work area | Move length longer than the work area | Move the length of the work area |
+| A changed `EQU` has no effect | A literal holds the same number | Use the `EQU` name |

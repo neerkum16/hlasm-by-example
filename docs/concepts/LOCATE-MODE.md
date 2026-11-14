@@ -1,8 +1,8 @@
 # Locate-Mode I/O (GL and PL)
 
-Scope: `GET` and `PUT` with no area operand on a sequential QSAM file (`MACRF=GL` and `MACRF=PL`), the address returned in R1, a DSECT mapped over the returned buffer, and the point at which an output record is written, as used in VB01LOC and VB01BILD. Update-in-place locate-mode macros and other access methods are not used in any program and are not described. Move mode is in the QSAM article, and the variable-length record format is in the variable-length records article. The programs were not assembled or run, apart from the run shown in the VB01LOC SYSOUT screen.
+Scope: `GET` and `PUT` with no area operand on a sequential QSAM file (`MACRF=GL` and `MACRF=PL`), the address returned in R1, a DSECT mapped over the returned buffer, and the point at which an output record is written, as used in VB01LOC, VB02FIX and VB01BILD. Update-in-place locate-mode macros and other access methods are not used in any program and are not described. Move mode is in the QSAM article, and the variable-length record format is in the variable-length records article. The programs were not assembled or run, apart from the runs shown in the VB01LOC and VB02FIX SYSOUT screens.
 
-Source programs: VB01LOC (input and output), VB01BILD (output).
+Source programs: VB01LOC and VB02FIX (input and output), VB01BILD (output).
 
 ## Central Idea
 
@@ -20,7 +20,7 @@ Move mode copies each record between the QSAM buffer and an area in the program.
 | Field names | A DSECT over `INAREA`, or a `DS 0CLn` list | A DSECT over the address in R1 |
 | Output record is written | At the `PUT` | At the next `PUT` or at `CLOSE` |
 
-DS02DSCT and QSAMPROC use move mode. VB01LOC and VB01BILD use locate mode.
+DS02DSCT, QSAMPROC and TB01TABL use move mode. VB01LOC, VB02FIX and VB01BILD use locate mode. VB02FIX has the same two-register structure as VB01LOC and the same `LR` after each `GET` and `PUT`.
 
 ## Input
 

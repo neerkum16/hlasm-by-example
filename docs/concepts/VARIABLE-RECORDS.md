@@ -1,8 +1,8 @@
 # Variable-Length Records and the RDW
 
-Scope: `RECFM=VB` records as built by VB01BILD and read by VB01LOC: the 4-byte RDW, `LRECL` as the longest record, the length arithmetic for a record with one variable field, a DSECT that marks where the variable field starts, and how ISPF Browse shows such a file. The Block Descriptor Word is mentioned in a source comment (QSAM removes it) and is not seen by any program. Spanned records, `RECFM=V` and variable-length files read in move mode are not used in any program and are not described. Locate mode is in the locate-mode article. The programs were not assembled or run, apart from the run shown in the VB01LOC SYSOUT screen.
+Scope: `RECFM=VB` records as built by VB01BILD and read by VB01LOC and VB02FIX: the 4-byte RDW, `LRECL` as the longest record, the length arithmetic for a record with one variable field, a DSECT that marks where the variable field starts, and how ISPF Browse shows such a file. The Block Descriptor Word is mentioned in a source comment (QSAM removes it) and is not seen by any program. Spanned records, `RECFM=V` and variable-length files read in move mode are not used in any program and are not described. Locate mode is in the locate-mode article. The programs were not assembled or run, apart from the run shown in the VB01LOC SYSOUT screen.
 
-Source programs: VB01BILD, VB01LOC.
+Source programs: VB01BILD, VB01LOC, VB02FIX.
 
 ## Central Idea
 
@@ -63,7 +63,7 @@ INNAME   DS    0CL1                    * +17 Variable part starts here
 
 - Writer: set the RDW length, clear the flag halfword, fill the fixed fields (`ZAP` for the packed amount), then `MVC OUTNAME(len),=CLlen'name'` with an explicit length. For the empty name VB01BILD codes no `MVC`: a machine `MVC` moves at least one byte, so only the RDW length of 17 says the name is absent.
 - Literals match the move length: `=CL5'WASH '` and `=CL20'HEX NUT STAINLESS   '` are written with trailing blanks.
-- Reader: trust the RDW, take the name length from it, and move exactly that many bytes. VB01LOC does no validation. A corrupt RDW or an empty name gives a wrong length, and the source comments note that production code validates the length first.
+- Reader: trust the RDW, take the name length from it, and move exactly that many bytes. VB01LOC does no validation, so an empty name gives a 256-byte move. VB02FIX validates the length in `READREC` (zero, negative, over 256) and sets the flag `NAMEOK` that `SHOWREC` and `BUILDOUT` test before `EX`; see the `EX` article. A damaged RDW that gives a negative or oversize length is rejected as an empty name and counted in `BADCNT`. That path was not in the test data.
 
 ## Seeing the File
 

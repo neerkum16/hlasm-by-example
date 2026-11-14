@@ -1,8 +1,8 @@
 # QSAM Processing and Control Break
 
-Scope: sequential files in move mode (`GET` and `PUT` with `MACRF=GM` and `PM`), the EODAD and SYNAD exits, open and close order, and control-break logic on a sorted file, as in QSAMPROC. Locate mode (VB01LOC, VB01BILD) is in the locate-mode article. Other access methods are not used in any program and are not described. The outline below is a layout from the notes in LEARNING.md, not a copy of the program. The programs were not assembled or run.
+Scope: sequential files in move mode (`GET` and `PUT` with `MACRF=GM` and `PM`), the EODAD and SYNAD exits, open and close order, and control-break logic on a sorted file, as in QSAMPROC, and a control break with packed subtotals on a merged stream, as in FS01SORT. Move mode with the area given by a register, as in TB01TABL, is included. Locate mode (VB01LOC, VB01BILD) is in the locate-mode article. Other access methods are not used in any program and are not described. The outline below is a layout from the notes in LEARNING.md, not a copy of the program. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: QSAMPROC (SYSOUT output also in every other program).
+Source programs: QSAMPROC (SYSOUT output also in every other program), FS01SORT (control break with subtotals), TB01TABL (`GET` into a table slot).
 
 ## Central Idea
 
@@ -52,6 +52,30 @@ close the data files, print counts, close SYSPRINT
 - A top-tested outer loop produces no output for an empty input.
 - The header line is written just before the first detail record, not at `OPEN`, so an empty input gives an empty output.
 
+## Subtotals on a Break: FS01SORT
+
+FS01SORT does not read one group at a time. It handles one record per pass and compares its region with the previous one.
+
+```
+COMMON   CLC   CURRGN,LASTRGN
+         BE    COMMNOBK                * Same region: no break
+         BAL   9,PUTSUBT               * Print the previous region's subtotal
+         MVC   LASTRGN,CURRGN          * Remember the new region
+COMMNOBK ...                           * AP SUBTOT and GRANDTOT, print detail
+```
+
+- `LASTRGN` starts as `X'000000000000'` (`LOWVALS`), so the first record always differs from it. `PUTSUBT` tests for that value and skips the print, so no special case is needed for the first record. A region code of six `X'00'` bytes would be taken as the start of the run.
+- `PUTSUBT` prints the subtotal and then does `ZAP SUBTOT,=P'0'` for the next group.
+- A control break prints a subtotal only when a new group starts, so the last group's subtotal is still pending when the loop ends. `MRGDONE` calls `PUTSUBT` once more for it. Leaving that call out loses the last subtotal.
+- The break field has to be contiguous, not sorted. Regions EAST, WEST, NORTH give three subtotals. If a region came back later in the stream it would get a second one.
+- Totals are `PL6` (11 digits), added with `AP` and shown in `ZONE11`. `OI` removes the sign, so a negative total would print as positive. All amounts in the test data are positive.
+- The data files are built in the job with `IEBGENER`, and `OPEN` is not checked with the `DCBD` test of BR09MTCH, so a missing DD name would fail at the first `GET` or `PUT`.
+- The result: 9 detail lines, subtotals EAST 6000, WEST 10500, NORTH 15000 and a grand total of 31500.
+
+## Reading into a Table Slot: TB01TABL
+
+`GET TABFILE,0(7)` is move mode with the area given as a register and a displacement. R7 points to the next free slot, so each record goes straight into its place in the table. `LRECL=12` equals the entry length, so a record fills one slot. At end of file `EODAD=TABEOF` saves the count.
+
 ## Record Layout
 
 - The output record is built from named `DS` fields (`OUTNAME`, `OUTID`, and so on, with `OUTC1` to `OUTC17` for the separators). A field is referred to by name, not by offset.
@@ -74,3 +98,6 @@ close the data files, print counts, close SYSPRINT
 | First record of a group lost or counted twice | No priming read, or the next record not kept at the break | Keep the record that caused the break for the next group |
 | Header written for an empty file | Header written at `OPEN` | Write it before the first detail record |
 | Return fails at EODAD | A register needed for the return was changed | Use a register from R2 to R13 that the caller left intact |
+| Last subtotal missing | No `PUTSUBT` call after the loop | Call it at end of file |
+| First subtotal printed with an empty region | Break field not primed | Start `LASTRGN` with low-values and skip the print for it |
+| Region subtotalled twice | The region is not contiguous in the stream | Merge or sort so each region is together |

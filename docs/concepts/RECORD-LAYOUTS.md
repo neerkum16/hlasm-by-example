@@ -2,7 +2,7 @@
 
 Scope: laying out a record with a `DS 0CLn` label and named fields (`INREC` and `OUTAREA` in QSAMPROC), placing a field with `ORG` in a CSECT (`OUTREC` in DS02BILD) and giving the same bytes two names with `ORG` in a DSECT (`CUSTBAL` and `CUSTBALC` in DS01DSCT). A zero-length `DS 0CL1` that marks where a variable-length field starts, and a 4-byte RDW laid out as two halfwords (`VBINRECD` in VB01LOC, `VBOUTRECD` in VB01BILD), are also covered. `ORG` with no operand is not used in any program and is not described. The DSECT mechanism is in the DSECT article, and the RDW is in the variable-length records article. The programs were not assembled or run.
 
-Source programs: QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT, VB01BILD, VB01LOC.
+Source programs: QSAMPROC, DS01DSCT, DS02BILD, DS02DSCT, VB01BILD, VB01LOC, VB02FIX.
 
 ## Central Idea
 

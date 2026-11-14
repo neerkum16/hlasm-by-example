@@ -1,8 +1,8 @@
 # Internal Subroutines with BAL
 
-Scope: internal routines in the same CSECT called with `BAL reg,label` and left with `BR reg`, one return register per calling level, parameters in registers and in a parameter block addressed by R1, and an `EODAD` routine that returns like a routine, as used in DT01TYPE, DT02ARTH, QSAMPROC, BR09MTCH, DS02DSCT and VB01LOC. Calls to other programs (`CALL`, `LINK`), routines with their own save area, `BALR`, `BAS` and recursion are not used in any program and are not described. Entry and exit linkage of the program itself is in the linkage article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
+Scope: internal routines in the same CSECT called with `BAL reg,label` and left with `BR reg`, one return register per calling level, parameters in registers and in a parameter block addressed by R1, and an `EODAD` routine that returns like a routine, as used in DT01TYPE, DT02ARTH, QSAMPROC, BR09MTCH, DS02DSCT, VB01LOC and FS01SORT. A separate program called with `CALL` or `BALR` (SB01CALL and SB02SUBR) is compared with an internal routine here and described in the linkage article. `LINK`, `BAS` and recursion are not used in any program and are not described. Entry and exit linkage of the program itself is in the linkage article. The programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH, VB01LOC.
+Source programs: DS02DSCT, BR09MTCH, QSAMPROC, DT01TYPE, DT02ARTH, VB01LOC, FS01SORT, SB01CALL (`SHOWRC`, and the call itself).
 
 ## Central Idea
 
@@ -37,6 +37,30 @@ DS02DSCT has two levels:
 QSAMPROC assigns registers by level: R10 for level 1, R9 for level 2, R8 for level 3, and R7 for `PRTMSG`, which is called from any level and so has its own register.
 
 A routine that calls no other routine can share the register of its own level. BR09MTCH calls only leaf routines, all with `BAL 10` (`READ1`, `READ2`, `OPENCHK`, `PRTCNTS`), so R10 is never overwritten. VB01LOC does the same: the mainline calls `OPENCHK`, `PRTMSG`, `READREC`, `SHOWREC` and `BUILDOUT` with `BAL 10`, and each ends with `BR 10`.
+
+## Shared Code Reached by a Branch: FS01SORT
+
+`MERGE` calls `PROCA` and `PROCB` with `BAL 10`. Both end with `B COMMON`, a plain branch, and `COMMON` ends with `BR 10`.
+
+- `COMMON` is not called. It runs as the tail of `PROCA` or `PROCB`, so the `BR 10` at the end of its `COMMNOBK` part returns to `MERGE` through the register set by the original `BAL`.
+- `COMMON` needs `PUTSUBT` at a region change. It calls it with `BAL 9,PUTSUBT`, and `PUTSUBT` ends with `BR 9`. R10 is not touched, so the `BR 10` at the end of `COMMNOBK` still reaches `MERGE`.
+- Per FS01SORT.md, the source comment records that an earlier version used `BAL 10` for `PUTSUBT`: R10 was overwritten and the `BR 10` branched into `COMMON` instead of `MERGE`.
+- `MRGDONE` also calls `BAL 9,PUTSUBT`, from the mainline, to print the last pending subtotal. Using R9 at both call sites matches the `BR 9`.
+
+## Internal Routine or Separate Program
+
+| | Internal routine (`BAL`) | Separate program (`CALL`, `BALR`) |
+|---|---|---|
+| Return address | A register chosen per level (R9, R10) | R14 |
+| Save area | None; the routine uses the caller's registers | Its own, chained through R13 |
+| Parameters | Registers, or a block addressed by R1 as a convention | A list of addresses in R1, high bit on the last |
+| Result | A switch, a register or storage, by agreement | A return code in R15 |
+| Target address | A label in the same CSECT | `V`-type constant, resolved by the linkage editor |
+| Example | `BAL 10,SHOWREC` | `CALL SB02SUBR,(TOTAL,AMOUNT)` |
+
+- The mechanics of the separate program are in the linkage article.
+- SB01CALL has both. `SHOWRC` is an internal routine, called with `BAL 10,SHOWRC` and left with `BR 10`, after each external call. It starts with `ST 15,SAVERC`, because the return code is in R15 and `PUT` reuses R15.
+- `SHOWRC` is called only from the mainline and calls no other internal routine. If it called one with `BAL 10`, R10 would be overwritten.
 
 ## Routines That Cannot Call Each Other
 
@@ -95,3 +119,5 @@ The routine sets a switch (`EOFSW`, `EOF1`, `EOF2`) and, in BR09MTCH, moves `HIV
 | Parameter is wrong after a macro | R1 changed by `GET`, `PUT` or `OPEN` | Load R1 right before the call |
 | Second call of a routine reads wrong data | Routine changed R2, R3 or R10 | Reload the parameters |
 | End of file does not return | `EOFRTN` ends without `BR` or with the wrong register | `BR` on the caller's return register |
+| Shared tail code returns into itself | A routine called from the tail used the caller's register | Give the call inside the tail its own register (`BAL 9` in `COMMON`) |
+| Return code not available after a macro | R15 reused by `PUT` or `GET` | Save R15 first (`ST 15,SAVERC`) |

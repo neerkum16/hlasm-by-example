@@ -1,8 +1,8 @@
 # Data Conversions and Editing
 
-Scope: the conversions `PACK`, `UNPK`, `CVB`, `CVD`, `OI`, `MVZ` and `ED` as used in REGCALC, DT02ARTH and DT03CONV, with the number display idiom and the `ED` pattern rules. `EDMK` is not used in any program and is not described. Hand-computed items are marked; the programs were not assembled or run.
+Scope: the conversions `PACK`, `UNPK`, `CVB`, `CVD`, `OI`, `MVZ` and `ED` as used in REGCALC, DT02ARTH and DT03CONV, with the number display idiom and the `ED` pattern rules, and `EDMK` with a floating `$` as used in ED01EDMK. Hand-computed items are marked; the programs were not assembled or run, apart from the runs shown in the SYSOUT screens.
 
-Source programs: REGCALC, DT02ARTH, DT03CONV.
+Source programs: REGCALC, DT02ARTH, DT03CONV, ED01EDMK.
 
 ## Central Idea
 
@@ -132,6 +132,35 @@ Pattern X'4020206B2020214B202060' (11 bytes: fill, 2 selectors, comma, 2 selecto
 
 Result: ` 12,345.67-`. For `PL4'7'` the same pattern gives `       .07 `: the leading digits, the comma and the starter digit are all replaced by the fill.
 
+## EDMK and a Floating Currency Sign: ED01EDMK
+
+`EDMK` does what `ED` does and, the first time a digit selector becomes significant, stores the address of that pattern byte in R1. R1 is otherwise left alone. The address is where the first printed digit will be, so R1 - 1 is the position for a sign.
+
+```
+         MVC   PATTERN,PATMAST         * Fresh copy of the master
+         EDMK  PATTERN,0(7)            * R1 = first significant digit
+         BCTR  1,0                     * One byte back
+         MVI   0(1),C'$'               * Float the $ into place
+```
+
+- `BCTR 1,0` subtracts 1 from the address in R1. Register 0 as the second operand means it never branches.
+- The `$` takes the position of the last fill byte, or of the comma if the comma was suppressed, so the pattern needs a fill byte in front of the first digit selector.
+- Run results from ED01EDMK:
+
+| Packed amount | Result |
+|---|---|
+| 7 | `        $7` |
+| 450 | `      $450` |
+| 1234567 | `  $1234567` |
+
+- A second pattern with a comma gave `$1234,567` for 1234567, `$999` for 999 and `$1000,000` for 1000000. The pattern has one comma, placed after the sixth selector and so three digits from the right. It has no comma for the millions group, so 1234567 shows as `$1234,567` and not `$1,234,567`. The banner of the program says the pattern covers amounts up to 9,999,999.
+- The amount 0 prints a blank result and no `$`. The comment in the source says the forced `X'21'` sets R1. In the run it does not: the `X'21'` is byte 12 of `PATMAST`, `PATTERN` is `CL11`, and `MVC PATTERN,PATMAST` copies 11 bytes. No digit selector becomes significant, so `EDMK` leaves R1 alone. `BCTR 1,0` and `MVI 0(1),C'$'` then store a `$` one byte before whatever R1 held, outside the output line. The byte that was overwritten was not identified.
+- The work area must be as long as the master. A master longer than its work area loses its last bytes, here the `X'21'`.
+- `EDMK` sets R1 only for an amount with a significant digit unless the pattern forces significance. Set R1 to a safe address before the `EDMK`, or test for zero first.
+- The pattern is destroyed by each edit, so every pass starts with `MVC PATTERN,PATMAST`. Loop 1 also copies 12 bytes of `PATTERN` into the output line, so byte 12 is the first byte of the next field in storage, `X'00'`, which shows as a blank.
+- All amounts in ED01EDMK are positive. Neither pattern has a minus sign, so a negative amount would print without one.
+- The banner comment on the source says `BCTR` also branches on the result; with register 0 it does not.
+
 ## A Complete Chain
 
 Character `00012345` to a printed value, from DT03CONV:
@@ -156,3 +185,6 @@ Character `00012345` to a printed value, from DT03CONV:
 | Second edit shows garbage | Pattern was destroyed by the first `ED` | Move the pattern again before each `ED` |
 | `.07` printed instead of `0.07` | Starter sits at the digit just before the period | Move X'21' one digit earlier |
 | Packed field has the sign in the middle | `MVC` used where `ZAP` was needed | Use `ZAP` |
+| `$` missing and a byte before the line changed | `EDMK` for amount 0 left R1 stale, and `BCTR`/`MVI` ran on it | Set R1 to a safe address first, or force significance inside the copied pattern |
+| Last pattern byte not applied | Work area shorter than the master pattern | Make the work area as long as the master |
+| Missing comma for the millions group | Pattern has one comma, three digits from the right | Add a comma byte per group of three digits |

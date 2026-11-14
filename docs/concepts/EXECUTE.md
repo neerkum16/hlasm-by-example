@@ -1,8 +1,8 @@
 # EX: Operand Length at Run Time
 
-Scope: `EX` used to run an `MVC` whose length is decided at run time (`MVCSHOWN` and `MVCBUILD` in VB01LOC), the length-minus-1 form made with `BCTR`, and the effect of an empty variable field. `EX` with instructions other than `MVC` is not used in any program and is not described. The fix for the empty-name case is described but was not run. The programs were not assembled or run, apart from the run shown in the VB01LOC SYSOUT screen.
+Scope: `EX` used to run an `MVC` whose length is decided at run time (`MVCSHOWN` and `MVCBUILD` in VB01LOC), the length-minus-1 form made with `BCTR`, the effect of an empty variable field, and the check that VB02FIX puts in front of `EX`. `EX` with instructions other than `MVC` is not used in any program and is not described. VB02FIX was run with the VB01BILD data, so only its zero-length path was exercised; the negative and over-256 paths were not run. The programs were not assembled or run, apart from the runs shown in the VB01LOC and VB02FIX SYSOUT screens.
 
-Source programs: VB01LOC.
+Source programs: VB01LOC (the defect), VB02FIX (the check).
 
 ## Central Idea
 
@@ -57,25 +57,44 @@ What the run shows (VB01LOC.md and the SYSOUT screen):
 
 The source comments say that a length of 0 is a harmless one-byte move and that production code checks the length. The check is left out. The empty-name case gives -1, not 0, so the comment is incomplete.
 
-## Fix (not run)
+## The Check in VB02FIX
 
-Test the name length once, where it is computed, and skip the move when it is zero:
+VB02FIX is VB01LOC with the length tested in `READREC`, once, where it is computed:
 
 ```
+         LH    5,INRDWLL               * R5 = record length, RDW included
          S     5,=F'17'                * R5 = name length
+         LTR   5,5                     * Test BEFORE trusting it
+         BZ    NAMEZERO                * Zero: a legal, empty name
+         BM    NAMEBAD                 * Negative: damaged RDW
+         C     5,=F'256'               * Over the MVC ceiling?
+         BH    NAMEBAD
          ST    5,NAMELEN
-         LTR   5,5                     * Empty name?
-         BZ    EMPTY                   * Yes: no BCTR, no EX
-         BCTR  5,0
+         BCTR  5,0                     * Safe: length - 1 for EX
+         ST    5,NAMELENM1
+         MVI   NAMEOK,C'Y'
+         B     RRCOMMON
 ```
 
-- Both `EX` sites, `SHOWREC` and `BUILDOUT`, need the same decision. One way is to store a switch, or to test `NAMELEN` before each `EX`.
-- `LTR` sets the condition code that `BZ` tests. `BCTR` does not set it, so the test goes before `BCTR`.
-- A name length above 256 would wrap, because only the low byte is used. A length computed from a corrupt RDW needs an upper limit as well as the zero test.
+```
+         CLI   NAMEOK,C'Y'             * In SHOWREC and BUILDOUT
+         BNE   SHOWPUT                 * Skip the EX
+         L     5,NAMELENM1
+         EX    5,MVCSHOWN
+```
+
+- `LTR` sets the condition code once. `BZ` does not change it, so `BM` still sees the result of the `LTR`. The `C` that follows sets a new code for `BH`.
+- `BCTR` comes after the tests. It does not set the condition code, so a test placed after it would test nothing.
+- The check is made once. `SHOWREC` and `BUILDOUT` test the one-byte flag `NAMEOK` and do not repeat the arithmetic.
+- For a rejected length `NAMELEN` is set to 0, so `BUILDOUT` still writes a valid record with an RDW length of 17 and no name bytes.
+- A length over 256 can occur only with a damaged RDW, because `LRECL=37` limits the name to 20 bytes.
+- Run result (VB02FIX SYSOUT): line 5 is `P100004   0000000` with a blank name, no bytes of record 5 appear on it, the end message `VB02FIX - PROGRAM ENDED NORMALLY` is printed, and `RECORDS READ  : 0000005` is followed by `BAD/EMPTY NAMES:0000001`. The output file browsed after the run shows the same 5 lines as the input: record 4 is `P100004` with no name.
+- The program counts the empty name with the rejected ones, although an empty name is a legal record. The source comment says this is for demonstration.
+- Only the zero path was exercised. Neither a negative length nor a length over 256 was in the test data.
 
 ## Rules
 
-- Never pass `EX` a length computed from data without checking it. Zero and negative lengths are the boundary cases.
+- Never pass `EX` a length computed from data without checking it. Zero, negative and over-256 lengths are the boundary cases; test all three and the flag that carries the result.
 - Code the target with length 1 so the length byte starts at zero.
 - Produce the register value with `BCTR` after checking for zero, not before.
 - Keep the target next to the `EX` and name it for what it moves (`MVCSHOWN`, `MVCBUILD`).
@@ -91,3 +110,5 @@ Test the name length once, where it is computed, and skip the move when it is ze
 | Move one byte too long | Register holds the length, not length - 1 | `BCTR` before `EX` |
 | Length wrong after `EX` | Target coded with a length above 1 | Code length 1 |
 | Fewer bytes moved than expected for a length above 256 | Only the low byte of the register is used | Limit the length |
+| Test placed after `BCTR` finds nothing | `BCTR` does not set the condition code | `LTR` before `BCTR` |
+| Second `EX` site still moves 256 bytes | Only one site was changed | Test the same flag at every `EX` (`NAMEOK` in VB02FIX) |
